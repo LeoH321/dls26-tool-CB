@@ -3,13 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DLS26 满级抢断 · 全局预期模拟器</title>
+    <title>DLS26 极品练卡 · 随机动态规划 (SDP) 引擎</title>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #0d1117; margin: 0; padding: 20px; color: #c9d1d9; }
         .container { max-width: 650px; margin: 0 auto; }
         .card { background: #161b22; border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid #30363d; box-shadow: 0 8px 24px rgba(0,0,0,0.6); }
-        h2 { margin-top: 0; font-size: 18px; border-bottom: 1px solid #30363d; padding-bottom: 12px; color: #58a6ff; }
+        h2 { margin-top: 0; font-size: 18px; border-bottom: 1px solid #30363d; padding-bottom: 12px; color: #58a6ff; display: flex; justify-content: space-between; align-items: center;}
         
+        .sdp-badge { background: #58a6ff; color: #0d1117; font-size: 12px; padding: 3px 8px; border-radius: 12px; font-weight: bold; }
         .grid-header { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 13px; color: #8b949e; font-weight: bold; text-align: center; }
         .grid-header span { flex: 1; }
         
@@ -26,9 +27,8 @@
         .dash-item { text-align: center; flex: 1; }
         .dash-value { font-size: 28px; font-weight: 900; margin-top: 8px; font-family: monospace;}
         
-        button { width: 100%; background-color: #2ea043; color: white; border: 1px solid rgba(240,246,252,0.1); padding: 18px; font-size: 18px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s;}
+        button { width: 100%; background-color: #2ea043; color: white; border: 1px solid rgba(240,246,252,0.1); padding: 18px; font-size: 18px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; box-shadow: 0 0 15px rgba(46,160,67,0.3);}
         button:hover { background-color: #3fb950; }
-        button:disabled { background-color: #21262d; color: #8b949e; cursor: not-allowed; border-color: #30363d; }
         
         .result-box { margin-top: 20px; padding: 20px; border-radius: 8px; background: #161b22; border-left: 6px solid #58a6ff; display: none; border-top: 1px solid #30363d; border-right: 1px solid #30363d; border-bottom: 1px solid #30363d;}
         .prob-row { margin-top: 10px; padding: 18px; background: #0d1117; border-radius: 8px; border: 1px solid #30363d; display: flex; justify-content: space-between; align-items: center;}
@@ -39,7 +39,7 @@
         
         .expect-info { flex: 1.5; text-align: right; }
         .expect-label { font-size: 12px; color: #8b949e; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 1px;}
-        .expect-val { font-size: 26px; font-weight: 900; font-family: monospace; }
+        .expect-val { font-size: 28px; font-weight: 900; font-family: monospace; }
         
         .best-row { border-color: rgba(63,185,80,0.6); background: rgba(63,185,80,0.05); }
         .best-val { color: #3fb950; text-shadow: 0 0 10px rgba(63,185,80,0.3); }
@@ -50,8 +50,8 @@
 <body>
 
 <div class="container">
-    <h1 style="text-align: center; color: #f0f6fc; margin-bottom: 5px;">🎯 抢断拉满 · 预期模拟器</h1>
-    <p style="text-align: center; color: #8b949e; font-size: 13px; margin-bottom: 30px;">模拟推演每一次抉择带来的“最终抢断落点”</p>
+    <h1 style="text-align: center; color: #f0f6fc; margin-bottom: 5px;">🎯 抢断拉满 · 终极数学引擎</h1>
+    <p style="text-align: center; color: #8b949e; font-size: 13px; margin-bottom: 30px;">基于随机动态规划 (SDP) 的 0 延迟绝对精确推演</p>
 
     <div class="card">
         <div class="grid-header">
@@ -65,20 +65,20 @@
 
     <div class="dashboard">
         <div class="dash-item">
-            <div style="color: #8b949e; font-size: 12px;">可用总潜力 (预算)</div>
+            <div style="color: #8b949e; font-size: 12px;">总冗余潜能</div>
             <div id="total-pool" class="dash-value" style="color: #58a6ff;">0</div>
         </div>
         <div class="dash-item" style="border-left: 1px solid #30363d; border-right: 1px solid #30363d;">
-            <div style="color: #8b949e; font-size: 12px;">已消耗</div>
+            <div style="color: #8b949e; font-size: 12px;">已消耗潜能</div>
             <div id="used-pool" class="dash-value" style="color: #ff7b72;">0</div>
         </div>
         <div class="dash-item">
-            <div style="color: #8b949e; font-size: 12px;">当前余额</div>
+            <div style="color: #8b949e; font-size: 12px;">剩余容量</div>
             <div id="remain-pool" class="dash-value" style="color: #3fb950;">0</div>
         </div>
     </div>
 
-    <button onclick="runSimulation()" id="sim-btn">🚀 模拟本回合 3 种选择的最终预期</button>
+    <button onclick="runSDP()">🚀 启动 SDP 瞬间精确推导</button>
     <div id="result" class="result-box"></div>
 </div>
 
@@ -133,146 +133,187 @@
         document.getElementById('remain-pool').style.color = remain >= 12 ? "#3fb950" : (remain >= 6 ? "#d2a8ff" : "#f85149");
     }
 
-    function shuffle(array) {
-        let currentIndex = array.length, randomIndex;
-        while (currentIndex > 0) {
-            randomIndex = Math.floor(Math.random() * currentIndex);
-            currentIndex--;
-            [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
-        }
-        return array;
-    }
-
-    // 核心：基于“本回合固定动作 + 后续AI动态最优解”的全程模拟器
-    function simulateFullPath(firstAction, initialState, iterations = 10000) {
-        let totalTkl = 0; 
-        
-        for (let i = 0; i < iterations; i++) {
-            let state = { ...initialState };
-            let step = 0;
-            
-            while (true) {
-                if (state.tkl >= 100 || state.cap <= 0) { 
-                    totalTkl += Math.min(100, state.tkl); 
-                    break; 
-                }
-                
-                let pool = [];
-                if (state.ctrl < 100) pool.push({id: 'ctrl', w: 2});
-                if (state.pass < 100) pool.push({id: 'pass', w: 1});
-                if (state.shoot < 100) pool.push({id: 'shoot', w: 1});
-                if (state.tkl < 100) pool.push({id: 'tkl', w: 1});
-                
-                if (pool.length === 0) { totalTkl += Math.min(100, state.tkl); break; }
-
-                let action = 1;
-                if (step === 0) {
-                    action = firstAction; // 强制执行本回合的选择
-                } else {
-                    // 后续由 AI 接管：计算当前池子下，各级教练可能的最大消耗
-                    // 排序池子，找出最贵的属性
-                    let sortedPool = [...pool].sort((a,b) => b.w - a.w);
-                    let maxCost3 = 0, maxCost2 = 0;
-                    
-                    for(let j=0; j<Math.min(3, sortedPool.length); j++) maxCost3 += sortedPool[j].w * 3;
-                    for(let j=0; j<Math.min(2, sortedPool.length); j++) maxCost2 += sortedPool[j].w * 2;
-                    
-                    // 只要能绝对安全装下，就优先用最大的，快速消灭炮灰
-                    if (state.cap >= maxCost3 && pool.length >= 3) action = 3;
-                    else if (state.cap >= maxCost2 && pool.length >= 2) action = 2;
-                    else action = 1;
-                }
-
-                shuffle(pool);
-                let drawn = pool.slice(0, Math.min(action, pool.length));
-                
-                let cost = 0;
-                drawn.forEach(s => cost += s.w * action);
-                
-                if (cost > state.cap) {
-                    // 触发稀释平分：按比例给分，然后容量归零结束
-                    let fraction = state.cap / cost;
-                    drawn.forEach(s => {
-                        if (s.id === 'tkl') state.tkl += (action * fraction);
-                    });
-                    state.cap = 0; 
-                } else {
-                    // 正常加点
-                    state.cap -= cost;
-                    drawn.forEach(s => { state[s.id] += action; });
-                }
-                step++;
+    // 数学组合生成器
+    function getCombinations(arr, k) {
+        if (k >= arr.length) return [arr]; 
+        let result = [];
+        function run(level, start, currentCombo) {
+            if (level === k) { result.push(currentCombo); return; }
+            for (let i = start; i < arr.length; i++) {
+                run(level + 1, i + 1, currentCombo.concat([arr[i]]));
             }
         }
-        return totalTkl / iterations; // 返回最终的平均落点预期
+        run(0, 0, []);
+        return result;
     }
 
-    function runSimulation() {
+    // ============== 核心：Stochastic Dynamic Programming (SDP) ==============
+    const memo = new Map();
+
+    // 递归计算状态的绝对数学期望 (记忆化搜索)
+    function dp(cap, ctrl, pass, shoot, tkl) {
+        if (tkl >= 100) return 100;
+        if (cap <= 0) return tkl;
+
+        const key = `${cap}_${ctrl}_${pass}_${shoot}_${tkl}`;
+        if (memo.has(key)) return memo.get(key);
+
+        let pool = [];
+        if (ctrl < 100) pool.push({id: 'ctrl', w: 2});
+        if (pass < 100) pool.push({id: 'pass', w: 1});
+        if (shoot < 100) pool.push({id: 'shoot', w: 1});
+        if (tkl < 100) pool.push({id: 'tkl', w: 1});
+
+        if (pool.length === 0) return tkl;
+
+        let maxExpected = 0;
+
+        // 遍历三种选择，寻找该状态下的最优解
+        for (let action of [1, 2, 3]) {
+            let numPicks = Math.min(action, pool.length);
+            let combos = getCombinations(pool, numPicks);
+            let expectedForAction = 0;
+
+            for (let combo of combos) {
+                let cost = 0;
+                let hasTkl = false;
+                for (let s of combo) {
+                    cost += s.w * action;
+                    if (s.id === 'tkl') hasTkl = true;
+                }
+
+                if (cost > cap) {
+                    // 触发平分机制的精确数学结算
+                    let fraction = cap / cost;
+                    let gainedTkl = hasTkl ? action * fraction : 0;
+                    expectedForAction += Math.min(100, tkl + gainedTkl);
+                } else {
+                    // 正常转移到子状态
+                    let n_ctrl = Math.min(100, ctrl + (combo.some(s=>s.id==='ctrl') ? action : 0));
+                    let n_pass = Math.min(100, pass + (combo.some(s=>s.id==='pass') ? action : 0));
+                    let n_shoot = Math.min(100, shoot + (combo.some(s=>s.id==='shoot') ? action : 0));
+                    let n_tkl = Math.min(100, tkl + (combo.some(s=>s.id==='tkl') ? action : 0));
+
+                    expectedForAction += dp(cap - cost, n_ctrl, n_pass, n_shoot, n_tkl);
+                }
+            }
+            // 累加所有组合的概率期望
+            expectedForAction /= combos.length; 
+            
+            if (expectedForAction > maxExpected) {
+                maxExpected = expectedForAction;
+            }
+        }
+
+        memo.set(key, maxExpected);
+        return maxExpected;
+    }
+
+    // 计算第一手的各个分支期望
+    function evaluateRootActions(cap, ctrl, pass, shoot, tkl) {
+        memo.clear(); // 清空缓存，保证本次计算新鲜
+        
+        let pool = [];
+        if (ctrl < 100) pool.push({id: 'ctrl', w: 2});
+        if (pass < 100) pool.push({id: 'pass', w: 1});
+        if (shoot < 100) pool.push({id: 'shoot', w: 1});
+        if (tkl < 100) pool.push({id: 'tkl', w: 1});
+
+        let results = [];
+        
+        for (let action of [1, 2, 3]) {
+            let numPicks = Math.min(action, pool.length);
+            let combos = getCombinations(pool, numPicks);
+            let expectedForAction = 0;
+
+            for (let combo of combos) {
+                let cost = 0;
+                let hasTkl = false;
+                for (let s of combo) {
+                    cost += s.w * action;
+                    if (s.id === 'tkl') hasTkl = true;
+                }
+
+                if (cost > cap) {
+                    let fraction = cap / cost;
+                    let gainedTkl = hasTkl ? action * fraction : 0;
+                    expectedForAction += Math.min(100, tkl + gainedTkl);
+                } else {
+                    let n_ctrl = Math.min(100, ctrl + (combo.some(s=>s.id==='ctrl') ? action : 0));
+                    let n_pass = Math.min(100, pass + (combo.some(s=>s.id==='pass') ? action : 0));
+                    let n_shoot = Math.min(100, shoot + (combo.some(s=>s.id==='shoot') ? action : 0));
+                    let n_tkl = Math.min(100, tkl + (combo.some(s=>s.id==='tkl') ? action : 0));
+
+                    // 进入后续的智能求最优解递归
+                    expectedForAction += dp(cap - cost, n_ctrl, n_pass, n_shoot, n_tkl);
+                }
+            }
+            expectedForAction /= combos.length;
+            results.push({ action: action, expectedTkl: expectedForAction });
+        }
+        return results;
+    }
+    // =========================================================================
+
+    function runSDP() {
         updateDashboard();
         const cap = parseInt(document.getElementById('remain-pool').innerText);
         const resultDiv = document.getElementById('result');
-        const btn = document.getElementById('sim-btn');
 
-        if (getVal('init', 'tkl') === 0 || getVal('target', 'tkl') === 0) { alert("请先填写完整的初始和模板数据！"); return; }
-        if (getVal('curr', 'tkl') >= 100) { alert("抢断已满 100，无需再算！"); return; }
-        if (cap <= 0) { alert("潜能池余额不足，卡片已满级！"); return; }
+        if (getVal('init', 'tkl') === 0 || getVal('target', 'tkl') === 0) { alert("请填写完整的初始和模板数据！"); return; }
+        if (getVal('curr', 'tkl') >= 100) { alert("抢断已满 100，收工！"); return; }
+        if (cap <= 0) { alert("潜能池已耗尽！"); return; }
 
-        btn.innerText = "⏳ 正在进行 10,000 次全局推演...";
-        btn.disabled = true;
+        // 获取当前状态
+        const ctrl = getVal('curr', 'ctrl');
+        const pass = getVal('curr', 'pass');
+        const shoot = getVal('curr', 'shoot');
+        const tkl = getVal('curr', 'tkl');
 
-        setTimeout(() => {
-            let initialState = {
-                cap: cap,
-                ctrl: getVal('curr', 'ctrl'),
-                pass: getVal('curr', 'pass'),
-                shoot: getVal('curr', 'shoot'),
-                tkl: getVal('curr', 'tkl')
-            };
+        // 瞬间执行 SDP 计算
+        const sdpResults = evaluateRootActions(cap, ctrl, pass, shoot, tkl);
 
-            const expCommon = simulateFullPath(1, initialState, 10000);
-            const expRare = simulateFullPath(2, initialState, 10000);
-            const expLegend = simulateFullPath(3, initialState, 10000);
+        let results = [
+            { name: '⚪ 普通教练', detail: '成本稳妥，概率平滑', val: sdpResults.find(r=>r.action===1).expectedTkl, color: '#e6edf3' },
+            { name: '🔵 稀有教练', detail: '中等风险，中等收益', val: sdpResults.find(r=>r.action===2).expectedTkl, color: '#58a6ff' },
+            { name: '👑 传奇教练', detail: '激进洗池，高风险极速满级', val: sdpResults.find(r=>r.action===3).expectedTkl, color: '#f1c40f' }
+        ];
 
-            let results = [
-                { name: '⚪ 普通教练', detail: '抽 1 项 / 加 1 点', val: expCommon, color: '#e6edf3' },
-                { name: '🔵 稀有教练', detail: '抽 2 项 / 加 2 点', val: expRare, color: '#58a6ff' },
-                { name: '👑 传奇教练', detail: '抽 3 项 / 加 3 点', val: expLegend, color: '#f1c40f' }
-            ];
+        results.sort((a, b) => b.val - a.val);
+        let best = results[0];
 
-            results.sort((a, b) => b.val - a.val); // 预期值最高排前面
-            let best = results[0];
-
-            let html = `<h3 style="margin-top:0; color: #e6edf3; border-bottom: 1px dashed #30363d; padding-bottom: 10px;">📉 本回合选择 → 最终满级预期对比</h3>`;
-            
-            results.forEach((res, index) => {
-                let isBest = index === 0;
-                html += `
-                    <div class="prob-row ${isBest ? 'best-row' : ''}">
-                        <div class="coach-info">
-                            <div class="coach-name" style="color: ${res.color}">${res.name}</div>
-                            <div class="coach-detail">${res.detail}</div>
-                        </div>
-                        <div class="expect-info">
-                            <div class="expect-label">如果本手选它，最终抢断将停在：</div>
-                            <div class="expect-val ${isBest ? 'best-val' : ''}" style="color: ${!isBest ? '#c9d1d9' : ''}">${res.val.toFixed(2)}</div>
-                        </div>
-                    </div>
-                `;
-            });
-
+        let html = `<h3 style="margin-top:0; color: #e6edf3; border-bottom: 1px dashed #30363d; padding-bottom: 10px; display:flex; justify-content:space-between; align-items:center;">
+            <span>📉 贝尔曼方程数学推导结果</span>
+            <span class="sdp-badge">SDP 极速运算完毕</span>
+        </h3>`;
+        
+        results.forEach((res, index) => {
+            let isBest = index === 0;
+            // 精度提高到小数点后 3 位，展示数学引擎的威力
+            let displayVal = res.val.toFixed(3); 
             html += `
-                <div class="recommendation">
-                    <div style="color: #3fb950; font-weight: bold; margin-bottom: 8px;">🎯 战术终极指令：本回合请点击【${best.name}】</div>
-                    引擎已完美模拟：综合考虑了当前剩余的 <b>${cap} 点潜能</b>、三种教练的成本差异，以及未来炮灰退池带来的连锁反应。数据证明，此刻选择该教练，能让你的抢断在最终满级时最接近 100！
+                <div class="prob-row ${isBest ? 'best-row' : ''}">
+                    <div class="coach-info">
+                        <div class="coach-name" style="color: ${res.color}">${res.name}</div>
+                        <div class="coach-detail">${res.detail}</div>
+                    </div>
+                    <div class="expect-info">
+                        <div class="expect-label">【绝对期望值】最终抢断定格于：</div>
+                        <div class="expect-val ${isBest ? 'best-val' : ''}" style="color: ${!isBest ? '#c9d1d9' : ''}">${displayVal}</div>
+                    </div>
                 </div>
             `;
+        });
 
-            resultDiv.style.display = 'block';
-            resultDiv.innerHTML = html;
+        html += `
+            <div class="recommendation">
+                <div style="color: #3fb950; font-weight: bold; margin-bottom: 8px;">👑 完美闭环指令：请点击【${best.name}】</div>
+                本次推演已完成，摒弃模拟波动误差。系统通过 <b>Stochastic Dynamic Programming</b> 逆向计算了从当前残局走向满级的所有命运组合。数据证明，遵循此建议，你的抢断将获得<b>概率上允许的最大值</b>。
+            </div>
+        `;
 
-            btn.innerText = "🚀 进入下一回合测算";
-            btn.disabled = false;
-        }, 100); 
+        resultDiv.style.display = 'block';
+        resultDiv.innerHTML = html;
     }
 </script>
 
