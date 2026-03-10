@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DLS26 满级抢断 · 蒙特卡洛 AI 引擎 (单步推演版)</title>
+    <title>DLS26 满级抢断 · 全局预期模拟器</title>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #0d1117; margin: 0; padding: 20px; color: #c9d1d9; }
         .container { max-width: 650px; margin: 0 auto; }
@@ -16,7 +16,7 @@
         .row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; background: #21262d; padding: 12px; border-radius: 8px; }
         .row label { flex: 1.2; font-weight: bold; font-size: 15px; color: #e6edf3;}
         .row input { flex: 1; margin: 0 5px; padding: 10px 5px; border: 1px solid #30363d; border-radius: 6px; text-align: center; font-size: 16px; background: #010409; color: #fff;}
-        .row input:focus { border-color: #58a6ff; outline: none; box-shadow: 0 0 0 2px rgba(88,166,255,0.3);}
+        .row input:focus { border-color: #58a6ff; outline: none;}
         
         .double-cost { color: #ff7b72; }
         .target-tackle { color: #3fb950; font-size: 18px; text-shadow: 0 0 8px rgba(63,185,80,0.4); }
@@ -26,18 +26,23 @@
         .dash-item { text-align: center; flex: 1; }
         .dash-value { font-size: 28px; font-weight: 900; margin-top: 8px; font-family: monospace;}
         
-        button { width: 100%; background-color: #238636; color: white; border: 1px solid rgba(240,246,252,0.1); padding: 18px; font-size: 18px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s;}
-        button:hover { background-color: #2ea043; }
+        button { width: 100%; background-color: #2ea043; color: white; border: 1px solid rgba(240,246,252,0.1); padding: 18px; font-size: 18px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s;}
+        button:hover { background-color: #3fb950; }
+        button:disabled { background-color: #21262d; color: #8b949e; cursor: not-allowed; border-color: #30363d; }
         
         .result-box { margin-top: 20px; padding: 20px; border-radius: 8px; background: #161b22; border-left: 6px solid #58a6ff; display: none; border-top: 1px solid #30363d; border-right: 1px solid #30363d; border-bottom: 1px solid #30363d;}
-        .prob-row { margin-top: 10px; padding: 15px; background: #0d1117; border-radius: 6px; border: 1px solid #30363d; display: flex; flex-direction: column; gap: 8px;}
-        .prob-bar-row { display: flex; justify-content: space-between; align-items: center; width: 100%;}
+        .prob-row { margin-top: 10px; padding: 18px; background: #0d1117; border-radius: 8px; border: 1px solid #30363d; display: flex; justify-content: space-between; align-items: center;}
         
-        .prob-bar-container { flex: 1; margin: 0 15px; background: #21262d; height: 16px; border-radius: 8px; overflow: hidden; border: 1px solid #30363d;}
-        .prob-bar { height: 100%; transition: width 0.5s ease-out; }
+        .coach-info { flex: 1; }
+        .coach-name { font-weight: bold; font-size: 16px; margin-bottom: 6px; }
+        .coach-detail { font-size: 12px; color: #8b949e; }
         
-        .expect-text { font-size: 13px; color: #8b949e; text-align: left; padding-left: 5px; font-weight: bold;}
-        .expect-val { color: #d2a8ff; font-family: monospace; font-size: 15px;}
+        .expect-info { flex: 1.5; text-align: right; }
+        .expect-label { font-size: 12px; color: #8b949e; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 1px;}
+        .expect-val { font-size: 26px; font-weight: 900; font-family: monospace; }
+        
+        .best-row { border-color: rgba(63,185,80,0.6); background: rgba(63,185,80,0.05); }
+        .best-val { color: #3fb950; text-shadow: 0 0 10px rgba(63,185,80,0.3); }
         
         .recommendation { margin-top: 20px; padding: 18px; background: rgba(88, 166, 255, 0.08); border-radius: 8px; border: 1px solid #58a6ff; font-size: 15px; line-height: 1.6;}
     </style>
@@ -45,31 +50,35 @@
 <body>
 
 <div class="container">
-    <h1 style="text-align: center; color: #f0f6fc; margin-bottom: 5px;">🤖 AI 蒙特卡洛引擎</h1>
-    <p style="text-align: center; color: #8b949e; font-size: 13px; margin-bottom: 30px;">基于“单步最优解”推演，拒绝死板路线</p>
+    <h1 style="text-align: center; color: #f0f6fc; margin-bottom: 5px;">🎯 抢断拉满 · 预期模拟器</h1>
+    <p style="text-align: center; color: #8b949e; font-size: 13px; margin-bottom: 30px;">模拟推演每一次抉择带来的“最终抢断落点”</p>
 
     <div class="card">
         <div class="grid-header">
             <span style="flex:1.2; text-align: left;">属性</span>
-            <span>① 初始卡</span>
-            <span>② 模板</span>
-            <span>③ 当前卡</span>
+            <span>① 初始白板</span>
+            <span>② 满级模板</span>
+            <span>③ 当前数值</span>
         </div>
         <div id="tech-grid"></div>
     </div>
 
     <div class="dashboard">
         <div class="dash-item">
-            <div style="color: #8b949e; font-size: 12px;">技术潜能容量</div>
+            <div style="color: #8b949e; font-size: 12px;">可用总潜力 (预算)</div>
             <div id="total-pool" class="dash-value" style="color: #58a6ff;">0</div>
         </div>
         <div class="dash-item" style="border-left: 1px solid #30363d; border-right: 1px solid #30363d;">
-            <div style="color: #8b949e; font-size: 12px;">当前可用余额</div>
+            <div style="color: #8b949e; font-size: 12px;">已消耗</div>
+            <div id="used-pool" class="dash-value" style="color: #ff7b72;">0</div>
+        </div>
+        <div class="dash-item">
+            <div style="color: #8b949e; font-size: 12px;">当前余额</div>
             <div id="remain-pool" class="dash-value" style="color: #3fb950;">0</div>
         </div>
     </div>
 
-    <button onclick="runSimulation()" id="sim-btn">🚀 测算【本回合】各教练收益</button>
+    <button onclick="runSimulation()" id="sim-btn">🚀 模拟本回合 3 种选择的最终预期</button>
     <div id="result" class="result-box"></div>
 </div>
 
@@ -118,6 +127,7 @@
         });
 
         document.getElementById('total-pool').innerText = totalPool;
+        document.getElementById('used-pool').innerText = usedPool;
         let remain = totalPool - usedPool;
         document.getElementById('remain-pool').innerText = remain;
         document.getElementById('remain-pool').style.color = remain >= 12 ? "#3fb950" : (remain >= 6 ? "#d2a8ff" : "#f85149");
@@ -133,9 +143,8 @@
         return array;
     }
 
-    // 单步推演算法：只固定第一步，后续完全由 AI 动态接管
-    function simulateFirstStep(firstAction, initialState, iterations = 5000) {
-        let wins = 0;
+    // 核心：基于“本回合固定动作 + 后续AI动态最优解”的全程模拟器
+    function simulateFullPath(firstAction, initialState, iterations = 10000) {
         let totalTkl = 0; 
         
         for (let i = 0; i < iterations; i++) {
@@ -143,8 +152,10 @@
             let step = 0;
             
             while (true) {
-                if (state.tkl >= 100) { wins++; totalTkl += 100; break; }
-                if (state.cap <= 0) { totalTkl += Math.min(100, state.tkl); break; }
+                if (state.tkl >= 100 || state.cap <= 0) { 
+                    totalTkl += Math.min(100, state.tkl); 
+                    break; 
+                }
                 
                 let pool = [];
                 if (state.ctrl < 100) pool.push({id: 'ctrl', w: 2});
@@ -156,16 +167,19 @@
 
                 let action = 1;
                 if (step === 0) {
-                    // 第 0 步：强行执行玩家此刻想要测试的教练
-                    action = firstAction; 
+                    action = firstAction; // 强制执行本回合的选择
                 } else {
-                    // 第 1 步及以后：AI 恢复理智，动态避险（只要不爆仓，能用大的绝不用小的）
-                    let hasCtrl = state.ctrl < 100;
-                    let maxCostL = hasCtrl ? 12 : 9;
-                    let maxCostR = hasCtrl ? 6 : 4;
+                    // 后续由 AI 接管：计算当前池子下，各级教练可能的最大消耗
+                    // 排序池子，找出最贵的属性
+                    let sortedPool = [...pool].sort((a,b) => b.w - a.w);
+                    let maxCost3 = 0, maxCost2 = 0;
                     
-                    if (state.cap >= maxCostL && pool.length >= 3) action = 3;
-                    else if (state.cap >= maxCostR && pool.length >= 2) action = 2;
+                    for(let j=0; j<Math.min(3, sortedPool.length); j++) maxCost3 += sortedPool[j].w * 3;
+                    for(let j=0; j<Math.min(2, sortedPool.length); j++) maxCost2 += sortedPool[j].w * 2;
+                    
+                    // 只要能绝对安全装下，就优先用最大的，快速消灭炮灰
+                    if (state.cap >= maxCost3 && pool.length >= 3) action = 3;
+                    else if (state.cap >= maxCost2 && pool.length >= 2) action = 2;
                     else action = 1;
                 }
 
@@ -176,25 +190,21 @@
                 drawn.forEach(s => cost += s.w * action);
                 
                 if (cost > state.cap) {
-                    // 触发平分机制
+                    // 触发稀释平分：按比例给分，然后容量归零结束
                     let fraction = state.cap / cost;
                     drawn.forEach(s => {
                         if (s.id === 'tkl') state.tkl += (action * fraction);
                     });
-                    totalTkl += Math.min(100, state.tkl);
-                    if (state.tkl >= 100) wins++;
-                    break;
+                    state.cap = 0; 
                 } else {
+                    // 正常加点
                     state.cap -= cost;
                     drawn.forEach(s => { state[s.id] += action; });
                 }
                 step++;
             }
         }
-        return {
-            winRate: (wins / iterations) * 100,
-            expectedTkl: totalTkl / iterations
-        };
+        return totalTkl / iterations; // 返回最终的平均落点预期
     }
 
     function runSimulation() {
@@ -203,11 +213,11 @@
         const resultDiv = document.getElementById('result');
         const btn = document.getElementById('sim-btn');
 
+        if (getVal('init', 'tkl') === 0 || getVal('target', 'tkl') === 0) { alert("请先填写完整的初始和模板数据！"); return; }
         if (getVal('curr', 'tkl') >= 100) { alert("抢断已满 100，无需再算！"); return; }
-        if (cap <= 0) { alert("潜能池已空，无法训练！"); return; }
+        if (cap <= 0) { alert("潜能池余额不足，卡片已满级！"); return; }
 
-        btn.innerText = "⏳ 引擎推演中...";
-        btn.style.backgroundColor = "#d2a8ff";
+        btn.innerText = "⏳ 正在进行 10,000 次全局推演...";
         btn.disabled = true;
 
         setTimeout(() => {
@@ -219,39 +229,32 @@
                 tkl: getVal('curr', 'tkl')
             };
 
-            // 测试：如果【本回合】分别点击普通、稀有、传奇，后续配合最优解的结果
-            const resCommon = simulateFirstStep(1, initialState, 5000);
-            const resRare = simulateFirstStep(2, initialState, 5000);
-            const resLegend = simulateFirstStep(3, initialState, 5000);
+            const expCommon = simulateFullPath(1, initialState, 10000);
+            const expRare = simulateFullPath(2, initialState, 10000);
+            const expLegend = simulateFullPath(3, initialState, 10000);
 
             let results = [
-                { name: '⚪ 普通教练 (+1 / 1项)', ...resCommon, color: '#e6edf3' },
-                { name: '🔵 稀有教练 (+2 / 2项)', ...resRare, color: '#58a6ff' },
-                { name: '👑 传奇教练 (+3 / 3项)', ...resLegend, color: '#f1c40f' }
+                { name: '⚪ 普通教练', detail: '抽 1 项 / 加 1 点', val: expCommon, color: '#e6edf3' },
+                { name: '🔵 稀有教练', detail: '抽 2 项 / 加 2 点', val: expRare, color: '#58a6ff' },
+                { name: '👑 传奇教练', detail: '抽 3 项 / 加 3 点', val: expLegend, color: '#f1c40f' }
             ];
 
-            // 按预期收益排序
-            results.sort((a, b) => {
-                if (b.winRate !== a.winRate) return b.winRate - a.winRate;
-                return b.expectedTkl - a.expectedTkl;
-            });
+            results.sort((a, b) => b.val - a.val); // 预期值最高排前面
             let best = results[0];
 
-            let html = `<h3 style="margin-top:0; color: #e6edf3; border-bottom: 1px dashed #30363d; padding-bottom: 10px;">📉 【单步决策】最终推演</h3>`;
+            let html = `<h3 style="margin-top:0; color: #e6edf3; border-bottom: 1px dashed #30363d; padding-bottom: 10px;">📉 本回合选择 → 最终满级预期对比</h3>`;
             
-            results.forEach(res => {
-                let barColor = res.name === best.name ? '#3fb950' : '#30363d';
+            results.forEach((res, index) => {
+                let isBest = index === 0;
                 html += `
-                    <div class="prob-row">
-                        <div class="prob-bar-row">
-                            <div style="width: 160px; font-weight: bold; color: ${res.color}">${res.name}</div>
-                            <div class="prob-bar-container">
-                                <div class="prob-bar" style="width: ${Math.max(res.winRate, 2)}%; background: ${barColor};"></div>
-                            </div>
-                            <div style="width: 60px; text-align: right; font-weight: bold;">${res.winRate.toFixed(1)}%</div>
+                    <div class="prob-row ${isBest ? 'best-row' : ''}">
+                        <div class="coach-info">
+                            <div class="coach-name" style="color: ${res.color}">${res.name}</div>
+                            <div class="coach-detail">${res.detail}</div>
                         </div>
-                        <div class="expect-text">
-                            👉 如果【本回合】点它，最终抢断预期停在：<span class="expect-val">${res.expectedTkl.toFixed(2)}</span>
+                        <div class="expect-info">
+                            <div class="expect-label">如果本手选它，最终抢断将停在：</div>
+                            <div class="expect-val ${isBest ? 'best-val' : ''}" style="color: ${!isBest ? '#c9d1d9' : ''}">${res.val.toFixed(2)}</div>
                         </div>
                     </div>
                 `;
@@ -259,8 +262,8 @@
 
             html += `
                 <div class="recommendation">
-                    <div style="color: #3fb950; font-weight: bold; margin-bottom: 8px;">🔥 本回合终极战术：点选【${best.name}】</div>
-                    AI 已经将你此刻的点击作为起手式，并模拟了后续所有回合的“动态避险”操作。选择该教练，是此时此刻为你带来的最稳妥、榨取点数最多的选择。
+                    <div style="color: #3fb950; font-weight: bold; margin-bottom: 8px;">🎯 战术终极指令：本回合请点击【${best.name}】</div>
+                    引擎已完美模拟：综合考虑了当前剩余的 <b>${cap} 点潜能</b>、三种教练的成本差异，以及未来炮灰退池带来的连锁反应。数据证明，此刻选择该教练，能让你的抢断在最终满级时最接近 100！
                 </div>
             `;
 
@@ -268,7 +271,6 @@
             resultDiv.innerHTML = html;
 
             btn.innerText = "🚀 进入下一回合测算";
-            btn.style.backgroundColor = "#238636";
             btn.disabled = false;
         }, 100); 
     }
