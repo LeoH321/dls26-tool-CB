@@ -2,83 +2,143 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DLS26 极品练卡 · 随机动态规划 (SDP) 引擎</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>DLS26 普卡后卫训练推荐器</title>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #0d1117; margin: 0; padding: 20px; color: #c9d1d9; }
-        .container { max-width: 650px; margin: 0 auto; }
-        .card { background: #161b22; border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid #30363d; box-shadow: 0 8px 24px rgba(0,0,0,0.6); }
-        h2 { margin-top: 0; font-size: 18px; border-bottom: 1px solid #30363d; padding-bottom: 12px; color: #58a6ff; display: flex; justify-content: space-between; align-items: center;}
+        :root {
+            --bg-color: #0d1117;
+            --card-bg: #161b22;
+            --card-border: #30363d;
+            --primary-text: #e6edf3;
+            --secondary-text: #8b949e;
+            --blue-light: #58a6ff;
+            --green-light: #3fb950;
+            --red-light: #ff7b72;
+            --golden: #f1c40f;
+            --golden-bg: linear-gradient(135deg, #2a2510 0%, #1a1708 100%);
+            --maxed-bg: linear-gradient(135deg, #d32f2f 0%, #f57c00 100%); 
+            --font-stack: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body { font-family: var(--font-stack); background-color: var(--bg-color); color: var(--primary-text); margin: 0; padding: 20px; box-sizing: border-box; display: flex; justify-content: center; line-height: 1.5; }
+        .container { max-width: 650px; width: 100%; display: flex; flex-direction: column; gap: 20px; }
+
+        h1 { text-align: center; color: var(--primary-text); margin: 0; font-size: 24px; }
+        .sub-header { text-align: center; color: var(--secondary-text); font-size: 13px; margin: -5px 0 10px 0; }
+
+        .player-card-wrapper { border-radius: 12px; padding: 25px 15px 15px 15px; transition: all 0.5s ease; position: relative; overflow: hidden; border: 2px solid var(--golden); }
+        .status-normal { background: var(--golden-bg); box-shadow: 0 0 15px rgba(241, 196, 15, 0.15); }
+        .status-maxed { background: var(--maxed-bg); box-shadow: 0 0 25px rgba(211, 47, 47, 0.5); }
+
+        .card-title { text-align: center; font-size: 13px; font-weight: bold; letter-spacing: 2px; color: rgba(255,255,255,0.8); margin-bottom: 25px; text-transform: uppercase; display: flex; justify-content: center; align-items: center; gap: 8px; }
+        .max-star { display: inline-flex; justify-content: center; align-items: center; background: #00a8ff; color: white; border-radius: 50%; width: 20px; height: 20px; font-size: 14px; box-shadow: 0 0 8px rgba(0, 168, 255, 0.8); }
+
+        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; }
+        .stat-col { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+        .stat-name { font-size: 14px; font-weight: bold; color: var(--primary-text); text-align: center; line-height: 1.2; }
+        .stat-name small { font-size: 11px; color: var(--secondary-text); font-weight: normal; }
+
+        .double-cost { color: var(--red-light); }
+        .target-tackle { color: #fff; text-shadow: 0 0 8px rgba(255,255,255,0.4); }
+
+        .circle-input-wrapper { position: relative; margin-bottom: 8px; }
+        input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+
+        .circle-input { width: 60px; height: 60px; border-radius: 50%; background-color: #0a0a0a; border: 2px solid #333; color: #fff; text-align: center; font-size: 24px; font-weight: 900; box-shadow: inset 0 0 10px rgba(255,255,255,0.05); transition: 0.3s; padding: 0; box-sizing: border-box; -moz-appearance: textfield; }
+        .circle-input:focus { outline: none; border-color: var(--blue-light); box-shadow: 0 0 15px rgba(88,166,255,0.4); }
         
-        .sdp-badge { background: #58a6ff; color: #0d1117; font-size: 12px; padding: 3px 8px; border-radius: 12px; font-weight: bold; }
-        .grid-header { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 13px; color: #8b949e; font-weight: bold; text-align: center; }
-        .grid-header span { flex: 1; }
-        
-        .row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; background: #21262d; padding: 12px; border-radius: 8px; }
-        .row label { flex: 1.2; font-weight: bold; font-size: 15px; color: #e6edf3;}
-        .row input { flex: 1; margin: 0 5px; padding: 10px 5px; border: 1px solid #30363d; border-radius: 6px; text-align: center; font-size: 16px; background: #010409; color: #fff;}
-        .row input:focus { border-color: #58a6ff; outline: none;}
-        
-        .double-cost { color: #ff7b72; }
-        .target-tackle { color: #3fb950; font-size: 18px; text-shadow: 0 0 8px rgba(63,185,80,0.4); }
-        .locked-stat { opacity: 0.5; background: #090c10 !important; }
-        
-        .dashboard { display: flex; justify-content: space-between; background: #010409; padding: 20px; border-radius: 8px; border: 1px solid #30363d; margin-bottom: 20px; }
+        /* 锁定后，当前输入框保持活跃并有呼吸灯提示 */
+        .is-locked .circle-input { border-color: var(--blue-light); animation: pulseBorder 2s infinite; }
+        @keyframes pulseBorder { 0% { box-shadow: 0 0 0 0 rgba(88,166,255,0.4); } 70% { box-shadow: 0 0 0 6px rgba(88,166,255,0); } 100% { box-shadow: 0 0 0 0 rgba(88,166,255,0); } }
+
+        .circle-label { position: absolute; bottom: -22px; left: 50%; transform: translateX(-50%); font-size: 11px; color: var(--secondary-text); font-weight: bold; transition: 0.3s; }
+        .is-locked .circle-label { color: var(--blue-light); }
+
+        .sub-inputs { display: flex; flex-direction: column; gap: 8px; width: 100%; margin-top: 15px; }
+        .sub-input-row { display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.4); border-radius: 8px; border: 1px solid rgba(255,255,255,0.05); transition: 0.3s; }
+        .sub-input-row span { font-size: 11px; color: var(--secondary-text); font-weight: bold; padding-left: 6px; }
+        .sub-input-row input { width: 45px; background: transparent; border: none; color: #fff; text-align: right; font-weight: bold; font-size: 14px; padding: 6px; }
+        .sub-input-row input:focus { outline: none; color: var(--golden); }
+        .sub-input-row input:disabled { color: rgba(255,255,255,0.3); }
+
+        .init-row { display: none; padding: 6px 10px; opacity: 0; transform: translateY(-5px); }
+        .init-display { font-size: 14px; font-weight: bold; color: var(--golden); }
+
+        .is-locked .init-row { display: flex; animation: slideDownFade 0.3s forwards ease-out; }
+        @keyframes slideDownFade { to { opacity: 1; transform: translateY(0); } }
+
+        @media (max-width: 600px) { .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 32px 15px; } }
+
+        .action-zone { display: flex; gap: 10px; margin-bottom: 5px; }
+        .btn-lock { flex: 1; background-color: #d2a8ff; color: #0d1117; border: none; padding: 14px; font-size: 16px; border-radius: 10px; font-weight: bold; cursor: pointer; transition: 0.2s; box-shadow: 0 0 12px rgba(210,168,255,0.25); }
+        .btn-lock:hover { background-color: #b37feb; transform: translateY(-1px); }
+        .btn-reset { display: none; flex: 1; background-color: #21262d; color: var(--primary-text); border: 1px solid var(--card-border); padding: 12px; font-size: 14px; border-radius: 10px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .btn-reset:hover { background-color: #30363d; }
+
+        .dashboard { display: flex; justify-content: space-between; background-color: #010409; padding: 20px; border-radius: 12px; border: 1px solid var(--card-border); margin-bottom: 25px; transition: 0.3s; }
+        .dashboard.unlocked { opacity: 0.4; pointer-events: none; filter: grayscale(100%); }
         .dash-item { text-align: center; flex: 1; }
-        .dash-value { font-size: 28px; font-weight: 900; margin-top: 8px; font-family: monospace;}
+        .dash-value { font-size: 28px; font-weight: 900; margin-top: 8px; font-family: monospace; transition: 0.3s; }
+        @media (max-width: 600px) { .dashboard { flex-direction: column; gap: 15px; padding: 15px; } }
+
+        .btn-sdp { width: 100%; background-color: #2ea043; color: white; border: 1px solid rgba(240,246,252,0.1); padding: 18px; font-size: 18px; border-radius: 12px; font-weight: bold; cursor: pointer; transition: 0.2s; box-shadow: 0 0 15px rgba(46,160,67,0.3); }
+        .btn-sdp:hover { background-color: #3fb950; transform: translateY(-1px); }
+        .btn-sdp:disabled { background-color: #21262d; color: var(--secondary-text); cursor: not-allowed; box-shadow: none; border-color: var(--card-border); transform: none; }
+
+        .result-box { margin-top: 10px; display: none; flex-direction: column; gap: 15px; }
         
-        button { width: 100%; background-color: #2ea043; color: white; border: 1px solid rgba(240,246,252,0.1); padding: 18px; font-size: 18px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; box-shadow: 0 0 15px rgba(46,160,67,0.3);}
-        button:hover { background-color: #3fb950; }
+        /* 顶级战术推荐版块 - 拟人化大字报 */
+        .hero-rec { background: rgba(63, 185, 80, 0.1); border: 1px solid rgba(63, 185, 80, 0.4); border-radius: 12px; padding: 25px; border-left: 8px solid var(--green-light); box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+        .hero-title { color: var(--green-light); font-size: 18px; font-weight: bold; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; }
+        .hero-content { color: var(--primary-text); font-size: 15px; line-height: 1.7; letter-spacing: 0.3px; }
+        .hero-highlight { color: #fff; font-weight: bold; font-size: 16px; background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; }
         
-        .result-box { margin-top: 20px; padding: 20px; border-radius: 8px; background: #161b22; border-left: 6px solid #58a6ff; display: none; border-top: 1px solid #30363d; border-right: 1px solid #30363d; border-bottom: 1px solid #30363d;}
-        .prob-row { margin-top: 10px; padding: 18px; background: #0d1117; border-radius: 8px; border: 1px solid #30363d; display: flex; justify-content: space-between; align-items: center;}
+        /* 其他备选预期数据 */
+        .other-options-title { font-size: 13px; color: var(--secondary-text); margin-top: 10px; border-bottom: 1px dashed var(--card-border); padding-bottom: 8px; }
+        .prob-row { padding: 15px; background-color: #0d1117; border-radius: 8px; border: 1px solid var(--card-border); display: flex; justify-content: space-between; align-items: center; }
+        .coach-info { flex: 1; display: flex; align-items: center; gap: 10px; }
+        .color-tag { width: 12px; height: 12px; border-radius: 50%; }
+        .color-A { background-color: #e6edf3; } .color-B { background-color: var(--blue-light); } .color-C { background-color: var(--golden); }
+        .coach-name { font-weight: bold; font-size: 15px; }
+        .expect-info { text-align: right; }
+        .expect-val { font-size: 20px; font-weight: 900; font-family: monospace; color: var(--primary-text); }
         
-        .coach-info { flex: 1; }
-        .coach-name { font-weight: bold; font-size: 16px; margin-bottom: 6px; }
-        .coach-detail { font-size: 12px; color: #8b949e; }
-        
-        .expect-info { flex: 1.5; text-align: right; }
-        .expect-label { font-size: 12px; color: #8b949e; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 1px;}
-        .expect-val { font-size: 28px; font-weight: 900; font-family: monospace; }
-        
-        .best-row { border-color: rgba(63,185,80,0.6); background: rgba(63,185,80,0.05); }
-        .best-val { color: #3fb950; text-shadow: 0 0 10px rgba(63,185,80,0.3); }
-        
-        .recommendation { margin-top: 20px; padding: 18px; background: rgba(88, 166, 255, 0.08); border-radius: 8px; border: 1px solid #58a6ff; font-size: 15px; line-height: 1.6;}
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1 style="text-align: center; color: #f0f6fc; margin-bottom: 5px;">🎯 抢断拉满 · 终极数学引擎</h1>
-    <p style="text-align: center; color: #8b949e; font-size: 13px; margin-bottom: 30px;">基于随机动态规划 (SDP) 的 0 延迟绝对精确推演</p>
+    <h1><span style="font-size:20px;">🎯</span> 抢断极化 · 战术大师</h1>
+    <p class="sub-header">输入一次底层数据，随时更新当前进度</p>
 
-    <div class="card">
-        <div class="grid-header">
-            <span style="flex:1.2; text-align: left;">属性</span>
-            <span>① 初始白板</span>
-            <span>② 满级模板</span>
-            <span>③ 当前数值</span>
+    <div id="player-card" class="player-card-wrapper status-normal">
+        <div class="card-title" id="card-title">
+            <span id="card-title-text">- 等待输入底座与模板 -</span>
         </div>
-        <div id="tech-grid"></div>
+        <div id="tech-grid" class="stats-grid"></div>
     </div>
 
-    <div class="dashboard">
+    <div class="action-zone">
+        <button id="btn-lock" class="btn-lock" onclick="lockData()">🔒 确认数据</button>
+        <button id="btn-reset" class="btn-reset" onclick="resetData()">🔄 修改模板数据</button>
+    </div>
+
+    <div id="dashboard" class="dashboard unlocked">
         <div class="dash-item">
-            <div style="color: #8b949e; font-size: 12px;">总冗余潜能</div>
-            <div id="total-pool" class="dash-value" style="color: #58a6ff;">0</div>
+            <div style="color: var(--secondary-text); font-size: 12px;">技术总容量</div>
+            <div id="total-pool" class="dash-value" style="color: var(--blue-light);">0</div>
         </div>
-        <div class="dash-item" style="border-left: 1px solid #30363d; border-right: 1px solid #30363d;">
-            <div style="color: #8b949e; font-size: 12px;">已消耗潜能</div>
-            <div id="used-pool" class="dash-value" style="color: #ff7b72;">0</div>
+        <div class="dash-item" style="border-left: 1px solid var(--card-border); border-right: 1px solid var(--card-border);">
+            <div style="color: var(--secondary-text); font-size: 12px;">已被吞噬</div>
+            <div id="used-pool" class="dash-value" style="color: var(--red-light);">0</div>
         </div>
         <div class="dash-item">
-            <div style="color: #8b949e; font-size: 12px;">剩余容量</div>
-            <div id="remain-pool" class="dash-value" style="color: #3fb950;">0</div>
+            <div style="color: var(--secondary-text); font-size: 12px;">剩余点数</div>
+            <div id="remain-pool" class="dash-value" style="color: var(--green-light);">0</div>
         </div>
     </div>
 
-    <button onclick="runSDP()">🚀 启动 SDP 瞬间精确推导</button>
+    <button id="btn-sdp" class="btn-sdp" onclick="runSDP()" disabled>🚀 测算本回合终极战术</button>
     <div id="result" class="result-box"></div>
 </div>
 
@@ -90,71 +150,145 @@
         { id: 'tkl', name: '抢断', weight: 1, isTarget: true }
     ];
 
-    function createRow(stat) {
+    window.initData = { ctrl: 0, pass: 0, shoot: 0, tkl: 0 };
+    window.isLocked = false;
+
+    function createStatCol(stat) {
         const labelClass = stat.weight === 2 ? 'double-cost' : (stat.isTarget ? 'target-tackle' : '');
-        const icon = stat.isTarget ? '🎯 ' : '';
-        const weightText = stat.weight === 2 ? '(耗2点)' : '(耗1点)';
         return `
-            <div class="row" id="row_${stat.id}">
-                <label class="${labelClass}">${icon}${stat.name}<br><small style="font-size:11px; color:#8b949e;">${weightText}</small></label>
-                <input type="number" id="init_${stat.id}" placeholder="初始" oninput="updateDashboard()">
-                <input type="number" id="target_${stat.id}" placeholder="模板" oninput="updateDashboard()">
-                <input type="number" id="curr_${stat.id}" placeholder="当前" style="font-weight:bold; color:#58a6ff;" oninput="updateDashboard()">
+            <div class="stat-col">
+                <div class="stat-name ${labelClass}">${stat.isTarget ? '🎯 ' : ''}${stat.name}</div>
+                <div class="circle-input-wrapper">
+                    <input class="circle-input" type="number" id="curr_${stat.id}" placeholder="-" oninput="updateDashboard()">
+                    <div class="circle-label">当前数值</div>
+                </div>
+                <div class="sub-inputs">
+                    <div class="sub-input-row init-row" id="init_row_${stat.id}">
+                        <span>底座起点</span>
+                        <span id="display_init_${stat.id}" class="init-display">-</span>
+                    </div>
+                    <div class="sub-input-row target-row">
+                        <span>满级目标</span>
+                        <input type="number" class="target-input" id="target_${stat.id}" placeholder="-" oninput="updateDashboard()">
+                    </div>
+                </div>
             </div>
         `;
     }
 
-    document.getElementById('tech-grid').innerHTML = techStats.map(s => createRow(s)).join('');
+    document.getElementById('tech-grid').innerHTML = techStats.map(s => createStatCol(s)).join('');
 
     function getVal(type, id) { return parseInt(document.getElementById(`${type}_${id}`).value) || 0; }
 
-    window.updateDashboard = function() {
-        let totalPool = 0, usedPool = 0;
+    window.lockData = function() {
+        let allValid = true;
         techStats.forEach(stat => {
-            const init = getVal('init', stat.id);
+            let curr = getVal('curr', stat.id);
+            let target = getVal('target', stat.id);
+            if (curr === 0 || target === 0) allValid = false;
+        });
+
+        if (!allValid) { alert("bro，先在黑圈里填好目前的属性，并在下面填好满级模板再锁定！"); return; }
+
+        techStats.forEach(stat => {
+            let curr = getVal('curr', stat.id);
+            window.initData[stat.id] = curr;
+            document.getElementById(`display_init_${stat.id}`).innerText = curr;
+            document.getElementById(`target_${stat.id}`).disabled = true; 
+        });
+
+        window.isLocked = true;
+        document.getElementById('tech-grid').classList.add('is-locked');
+        
+        document.getElementById('btn-lock').style.display = 'none';
+        document.getElementById('btn-reset').style.display = 'block';
+        document.getElementById('dashboard').classList.remove('unlocked');
+        document.getElementById('btn-sdp').disabled = false;
+        document.getElementById('card-title-text').innerText = "🟢 存档已锁定 · 记得更新上方黑圈";
+
+        updateDashboard();
+    }
+
+    window.resetData = function() {
+        window.isLocked = false;
+        document.getElementById('tech-grid').classList.remove('is-locked');
+        techStats.forEach(stat => {
+            document.getElementById(`display_init_${stat.id}`).innerText = '-';
+            document.getElementById(`target_${stat.id}`).disabled = false;
+        });
+        document.getElementById('btn-lock').style.display = 'block';
+        document.getElementById('btn-reset').style.display = 'none';
+        document.getElementById('dashboard').classList.add('unlocked');
+        document.getElementById('btn-sdp').disabled = true;
+        document.getElementById('card-title-text').innerText = "- 等待输入底座与模板 -";
+        document.getElementById('result').style.display = 'none';
+        document.getElementById('player-card').className = 'player-card-wrapper status-normal';
+        updateDashboard();
+    }
+
+    window.updateDashboard = function() {
+        if (!window.isLocked) return;
+
+        let totalPool = 0, usedPool = 0;
+        
+        techStats.forEach(stat => {
+            const init = window.initData[stat.id];
             const target = getVal('target', stat.id);
             let curr = getVal('curr', stat.id);
-            if(curr < init && curr !== 0) curr = init; 
             
-            if (curr >= 100 && curr !== 0) {
-                document.getElementById(`row_${stat.id}`).classList.add('locked-stat');
-            } else {
-                document.getElementById(`row_${stat.id}`).classList.remove('locked-stat');
+            if (curr < init && curr !== 0) {
+                curr = init;
+                document.getElementById(`curr_${stat.id}`).value = init;
             }
 
             totalPool += Math.max(0, target - init) * stat.weight;
             usedPool += Math.max(0, curr - init) * stat.weight;
+            
+            const circle = document.getElementById(`curr_${stat.id}`);
+            if (curr >= 100) {
+                circle.style.borderColor = "var(--green-light)";
+                circle.style.color = "var(--green-light)";
+                circle.style.boxShadow = "inset 0 0 15px rgba(63,185,80,0.3)";
+            } else {
+                circle.style.borderColor = "var(--blue-light)";
+                circle.style.color = "#fff";
+            }
         });
 
         document.getElementById('total-pool').innerText = totalPool;
         document.getElementById('used-pool').innerText = usedPool;
         let remain = totalPool - usedPool;
         document.getElementById('remain-pool').innerText = remain;
-        document.getElementById('remain-pool').style.color = remain >= 12 ? "#3fb950" : (remain >= 6 ? "#d2a8ff" : "#f85149");
+        document.getElementById('remain-pool').style.color = remain >= 12 ? "var(--green-light)" : (remain >= 6 ? "var(--golden)" : "var(--red-light)");
+
+        const cardWrapper = document.getElementById('player-card');
+        const cardTitle = document.getElementById('card-title');
+        
+        if (remain <= 0) {
+            cardWrapper.className = 'player-card-wrapper status-maxed';
+            cardTitle.innerHTML = `<span class="max-star">★</span> <span id="card-title-text" style="color: #fff;">训练完毕 / 潜能已完全榨干</span>`;
+        } else {
+            cardWrapper.className = 'player-card-wrapper status-normal';
+            cardTitle.innerHTML = `<span id="card-title-text">🟢 存档已锁定 · 每回合练完直接改黑圈</span>`;
+        }
     }
 
-    // 数学组合生成器
     function getCombinations(arr, k) {
         if (k >= arr.length) return [arr]; 
         let result = [];
         function run(level, start, currentCombo) {
             if (level === k) { result.push(currentCombo); return; }
-            for (let i = start; i < arr.length; i++) {
-                run(level + 1, i + 1, currentCombo.concat([arr[i]]));
-            }
+            for (let i = start; i < arr.length; i++) { run(level + 1, i + 1, currentCombo.concat([arr[i]])); }
         }
         run(0, 0, []);
         return result;
     }
 
-    // ============== 核心：Stochastic Dynamic Programming (SDP) ==============
     const memo = new Map();
 
-    // 递归计算状态的绝对数学期望 (记忆化搜索)
     function dp(cap, ctrl, pass, shoot, tkl) {
         if (tkl >= 100) return 100;
         if (cap <= 0) return tkl;
-
         const key = `${cap}_${ctrl}_${pass}_${shoot}_${tkl}`;
         if (memo.has(key)) return memo.get(key);
 
@@ -163,56 +297,39 @@
         if (pass < 100) pool.push({id: 'pass', w: 1});
         if (shoot < 100) pool.push({id: 'shoot', w: 1});
         if (tkl < 100) pool.push({id: 'tkl', w: 1});
-
         if (pool.length === 0) return tkl;
 
         let maxExpected = 0;
-
-        // 遍历三种选择，寻找该状态下的最优解
         for (let action of [1, 2, 3]) {
             let numPicks = Math.min(action, pool.length);
             let combos = getCombinations(pool, numPicks);
             let expectedForAction = 0;
 
             for (let combo of combos) {
-                let cost = 0;
-                let hasTkl = false;
-                for (let s of combo) {
-                    cost += s.w * action;
-                    if (s.id === 'tkl') hasTkl = true;
-                }
+                let cost = 0, hasTkl = false;
+                for (let s of combo) { cost += s.w * action; if (s.id === 'tkl') hasTkl = true; }
 
                 if (cost > cap) {
-                    // 触发平分机制的精确数学结算
                     let fraction = cap / cost;
                     let gainedTkl = hasTkl ? action * fraction : 0;
                     expectedForAction += Math.min(100, tkl + gainedTkl);
                 } else {
-                    // 正常转移到子状态
                     let n_ctrl = Math.min(100, ctrl + (combo.some(s=>s.id==='ctrl') ? action : 0));
                     let n_pass = Math.min(100, pass + (combo.some(s=>s.id==='pass') ? action : 0));
                     let n_shoot = Math.min(100, shoot + (combo.some(s=>s.id==='shoot') ? action : 0));
                     let n_tkl = Math.min(100, tkl + (combo.some(s=>s.id==='tkl') ? action : 0));
-
                     expectedForAction += dp(cap - cost, n_ctrl, n_pass, n_shoot, n_tkl);
                 }
             }
-            // 累加所有组合的概率期望
             expectedForAction /= combos.length; 
-            
-            if (expectedForAction > maxExpected) {
-                maxExpected = expectedForAction;
-            }
+            if (expectedForAction > maxExpected) maxExpected = expectedForAction;
         }
-
         memo.set(key, maxExpected);
         return maxExpected;
     }
 
-    // 计算第一手的各个分支期望
     function evaluateRootActions(cap, ctrl, pass, shoot, tkl) {
-        memo.clear(); // 清空缓存，保证本次计算新鲜
-        
+        memo.clear(); 
         let pool = [];
         if (ctrl < 100) pool.push({id: 'ctrl', w: 2});
         if (pass < 100) pool.push({id: 'pass', w: 1});
@@ -220,19 +337,14 @@
         if (tkl < 100) pool.push({id: 'tkl', w: 1});
 
         let results = [];
-        
         for (let action of [1, 2, 3]) {
             let numPicks = Math.min(action, pool.length);
             let combos = getCombinations(pool, numPicks);
             let expectedForAction = 0;
 
             for (let combo of combos) {
-                let cost = 0;
-                let hasTkl = false;
-                for (let s of combo) {
-                    cost += s.w * action;
-                    if (s.id === 'tkl') hasTkl = true;
-                }
+                let cost = 0, hasTkl = false;
+                for (let s of combo) { cost += s.w * action; if (s.id === 'tkl') hasTkl = true; }
 
                 if (cost > cap) {
                     let fraction = cap / cost;
@@ -243,8 +355,6 @@
                     let n_pass = Math.min(100, pass + (combo.some(s=>s.id==='pass') ? action : 0));
                     let n_shoot = Math.min(100, shoot + (combo.some(s=>s.id==='shoot') ? action : 0));
                     let n_tkl = Math.min(100, tkl + (combo.some(s=>s.id==='tkl') ? action : 0));
-
-                    // 进入后续的智能求最优解递归
                     expectedForAction += dp(cap - cost, n_ctrl, n_pass, n_shoot, n_tkl);
                 }
             }
@@ -253,66 +363,70 @@
         }
         return results;
     }
-    // =========================================================================
 
     function runSDP() {
-        updateDashboard();
+        if (!window.isLocked) return;
+        
         const cap = parseInt(document.getElementById('remain-pool').innerText);
         const resultDiv = document.getElementById('result');
 
-        if (getVal('init', 'tkl') === 0 || getVal('target', 'tkl') === 0) { alert("请填写完整的初始和模板数据！"); return; }
-        if (getVal('curr', 'tkl') >= 100) { alert("抢断已满 100，收工！"); return; }
-        if (cap <= 0) { alert("潜能池已耗尽！"); return; }
+        if (getVal('curr', 'tkl') >= 100) { alert("抢断已达 100，完美毕业！🎯"); return; }
+        if (cap <= 0) { alert("潜能池已完全耗尽！"); return; }
 
-        // 获取当前状态
         const ctrl = getVal('curr', 'ctrl');
         const pass = getVal('curr', 'pass');
         const shoot = getVal('curr', 'shoot');
         const tkl = getVal('curr', 'tkl');
 
-        // 瞬间执行 SDP 计算
         const sdpResults = evaluateRootActions(cap, ctrl, pass, shoot, tkl);
 
         let results = [
-            { name: '⚪ 普通教练', detail: '成本稳妥，概率平滑', val: sdpResults.find(r=>r.action===1).expectedTkl, color: '#e6edf3' },
-            { name: '🔵 稀有教练', detail: '中等风险，中等收益', val: sdpResults.find(r=>r.action===2).expectedTkl, color: '#58a6ff' },
-            { name: '👑 传奇教练', detail: '激进洗池，高风险极速满级', val: sdpResults.find(r=>r.action===3).expectedTkl, color: '#f1c40f' }
+            { id: 1, name: '⚪ 普通教练', val: sdpResults.find(r=>r.action===1).expectedTkl, tagClass: 'color-A' },
+            { id: 2, name: '🔵 稀有教练', val: sdpResults.find(r=>r.action===2).expectedTkl, tagClass: 'color-B' },
+            { id: 3, name: '👑 传奇教练', val: sdpResults.find(r=>r.action===3).expectedTkl, tagClass: 'color-C' }
         ];
 
         results.sort((a, b) => b.val - a.val);
         let best = results[0];
 
-        let html = `<h3 style="margin-top:0; color: #e6edf3; border-bottom: 1px dashed #30363d; padding-bottom: 10px; display:flex; justify-content:space-between; align-items:center;">
-            <span>📉 贝尔曼方程数学推导结果</span>
-            <span class="sdp-badge">SDP 极速运算完毕</span>
-        </h3>`;
+        // 拟人化战术语言生成
+        let heroText = "";
+        if (best.id === 3) {
+            heroText = `现在的底盘容量还算充裕。虽然用金教练消耗大，但它能帮你**极速填满不需要的废属性（比如传球或射门）**，把它们提前踢出随机池！按照系统推演，只要这回合果断砸金教练，长线换来的抢断收益绝对是最高的。别心疼，直接上！`;
+        } else if (best.id === 1) {
+            heroText = `兄弟，快停手！你的潜能余额已经红牌警告了！现在的容量根本兜不住高级教练的爆仓惩罚，一旦触发系统的强制平分机制，你的抢断绝对拉不满。这回合只能**单吊白教练**，用最小的成本去磨概率，稳住目前的盘口！`;
+        } else {
+            heroText = `这是一个极其微妙的战术过渡期。你的潜能池已经不敢随意砸金教练了，但单吊白教练又过于拖沓。此时**蓝教练**是完美平衡“消耗速度”与“命中概率”的黄金解法。点蓝教练，能让抢断的数学期望最大化！`;
+        }
+
+        let html = `
+            <div class="hero-rec">
+                <div class="hero-title">🎙️ 建议：本回合点选【${best.name}】</div>
+                <div class="hero-content">${heroText}</div>
+                <div style="margin-top: 15px; border-top: 1px dashed rgba(63, 185, 80, 0.4); padding-top: 12px; font-size: 14px; color: var(--green-light);">
+                    🎯 严格遵循，练到满级后抢断的数学期望将定格在：<span class="hero-highlight">${best.val.toFixed(3)}</span>
+                </div>
+            </div>
+            <div class="other-options-title">其他非最优选项的最终预期对比：</div>
+        `;
         
+        // 渲染除了 best 之外的其他选项
         results.forEach((res, index) => {
-            let isBest = index === 0;
-            // 精度提高到小数点后 3 位，展示数学引擎的威力
-            let displayVal = res.val.toFixed(3); 
+            if (index === 0) return; // 跳过第一个（最佳）
             html += `
-                <div class="prob-row ${isBest ? 'best-row' : ''}">
+                <div class="prob-row">
                     <div class="coach-info">
-                        <div class="coach-name" style="color: ${res.color}">${res.name}</div>
-                        <div class="coach-detail">${res.detail}</div>
+                        <span class="color-tag ${res.tagClass}"></span>
+                        <div class="coach-name">${res.name}</div>
                     </div>
                     <div class="expect-info">
-                        <div class="expect-label">【绝对期望值】最终抢断定格于：</div>
-                        <div class="expect-val ${isBest ? 'best-val' : ''}" style="color: ${!isBest ? '#c9d1d9' : ''}">${displayVal}</div>
+                        <div class="expect-val" style="color: var(--secondary-text);">${res.val.toFixed(3)}</div>
                     </div>
                 </div>
             `;
         });
 
-        html += `
-            <div class="recommendation">
-                <div style="color: #3fb950; font-weight: bold; margin-bottom: 8px;">👑 完美闭环指令：请点击【${best.name}】</div>
-                本次推演已完成，摒弃模拟波动误差。系统通过 <b>Stochastic Dynamic Programming</b> 逆向计算了从当前残局走向满级的所有命运组合。数据证明，遵循此建议，你的抢断将获得<b>概率上允许的最大值</b>。
-            </div>
-        `;
-
-        resultDiv.style.display = 'block';
+        resultDiv.style.display = 'flex';
         resultDiv.innerHTML = html;
     }
 </script>
