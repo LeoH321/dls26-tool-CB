@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DLS26 后卫训练推荐器</title>
+    <title>DLS26 后卫练卡推演 (极限胜率版)</title>
     <style>
         :root {
             --bg-main: #ffffff;
@@ -14,6 +14,13 @@
             --accent-target: #2e7d32;
             --accent-warn: #d32f2f;
             --accent-gold: #b8860b;
+            
+            /* DLS 游戏数值专属阶梯色卡 (基于原图色相，针对白底做加深处理以保证阅读清晰度) */
+            --dls-blue: #008b8b;   /* >= 90: 深青蓝 */
+            --dls-green: #2e7d32;  /* >= 80: 森林绿 */
+            --dls-yellow: #b8860b; /* >= 70: 深橘金 */
+            --dls-red: #dc143c;    /* < 70:  猩红/粉红 */
+
             --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, sans-serif;
             --font-mono: "SF Mono", Menlo, Consolas, monospace;
         }
@@ -34,14 +41,13 @@
 
         .row-label { font-size: 12px; font-weight: 600; color: var(--text-muted); text-align: right; padding-right: 10px; line-height: 1.2; }
 
-        /* 增加了 step="any" 以完美支持带小数点的数值输入 */
-        input[type=number] { width: 100%; background: transparent; border: none; border-bottom: 1px solid var(--border-light); color: var(--text-main); text-align: center; font-family: var(--font-mono); border-radius: 0; padding: 5px 0; transition: all 0.2s; -moz-appearance: textfield; }
+        input[type=number] { width: 100%; background: transparent; border: none; border-bottom: 1px solid var(--border-light); color: var(--text-main); text-align: center; font-family: var(--font-mono); border-radius: 0; padding: 5px 0; transition: all 0.2s; -moz-appearance: textfield; font-weight: bold; }
         input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
         input[type=number]:focus { outline: none; border-bottom: 2px solid var(--text-main); }
 
-        .input-curr { font-size: 24px; font-weight: 700; color: var(--text-main); border-bottom: 2px solid var(--border-light); }
+        .input-curr { font-size: 24px; border-bottom: 2px solid var(--border-light); }
         .input-curr:focus { border-bottom-color: var(--text-main); }
-        .input-sub { font-size: 15px; color: var(--text-muted); }
+        .input-sub { font-size: 16px; }
 
         .dashboard { display: flex; justify-content: center; border-top: 1px solid var(--border-light); border-bottom: 1px solid var(--border-light); padding: 20px 0; }
         .dash-item { display: flex; flex-direction: column; align-items: center; text-align: center; }
@@ -71,7 +77,7 @@
         .trend-table-title { font-size: 13px; font-weight: 600; color: var(--text-muted); margin-bottom: 10px; }
         .trend-table { width: 100%; border-collapse: collapse; text-align: center; font-size: 13px; }
         .trend-table th, .trend-table td { border: 1px solid var(--border-light); padding: 10px 5px; }
-        .trend-table th { background-color: #f8f9fa; color: #555; font-weight: 600; width: 20%; }
+        .trend-table th { background-color: #f8f9fa; color: #555; font-weight: 600; width: 33%; }
         .trend-table td { font-family: var(--font-mono); font-weight: 600; color: var(--text-main); }
 
     </style>
@@ -102,7 +108,7 @@
             <input type="number" step="any" class="input-sub" id="target_ctrl" placeholder="-" oninput="updateDashboard()">
             <input type="number" step="any" class="input-sub" id="target_pass" placeholder="-" oninput="updateDashboard()">
             <input type="number" step="any" class="input-sub" id="target_shoot" placeholder="-" oninput="updateDashboard()">
-            <input type="number" step="any" class="input-sub" id="target_tkl" placeholder="-" value="100" readonly style="color:var(--accent-target); font-weight:bold;">
+            <input type="number" step="any" class="input-sub" id="target_tkl" placeholder="-" value="100" oninput="updateDashboard()">
         </div>
     </div>
 
@@ -130,45 +136,33 @@
 
     const textPersonas = [
         { 
-            gold: "既然只搏 100 满分，就不留退路了。用金教练强杀废属性，只要这把能洗掉杂质，后面才有直通 100 的可能。别心疼底子，干就完了。",
-            blue: "这回合用蓝教练。金教练爆仓风险太大，直接葬送满分希望；白教练太拖节奏。蓝教练是唯一能让你保住那一丝 100 分概率的独木桥。",
-            white: "容量已经极度危险。现在任何高级教练都会直接引爆平分惩罚，彻底断送 100 分的可能。切白教练，死抠这最后的胜率！",
-            luck99: "盘面极佳：这张卡就是为 100 抢断生的。只要你不手贱乱点，稳稳的满分防卫者。",
-            luck97: "走势良好：目前保留了冲击 100 分的优良火种。按策略执行，我们就是在买最大的赢面。",
-            luck95: "容错极低：因为只搏 100 分，你现在的处境非常被动。接下来的每一步都必须精确到小数点，没有退路。",
-            luck0:  "濒临死局：老实说，这卡冲击 100 的希望极其渺茫了。但既然要赌命，我们就用策略去抢那哪怕 1% 的奇迹。"
-        },
-        { 
-            gold: "听我的，要 100 满分就得敢下重注。金教练直接上，要么死要么神，把废属性全部顶爆，给抢断腾路！",
-            blue: "上蓝教练。纯赌狗玩法也得讲究基本法，蓝教练能让废属性快速退场，还不至于一把把家底全败光，这是搏 100 的最佳跳板。",
-            white: "没筹码了兄弟，赶紧切白教练。你的点数已经不允许任何激进了，用白底慢慢磨，强行吊住这口 100 分的气。",
-            luck99: "完美开局：系统发牌员已经在对你笑了，这把不出 100 我倒立洗头。",
-            luck97: "稳中向好：目前冲击 100 的希望非常大。别浪，严守纪律。",
-            luck95: "赌徒狂欢：这卡的 100 分概率已经被你挥霍得差不多了，接下来就是真正的极限微操，生死有命。",
-            luck0:  "命悬一线：这卡基本算是废了，满分希望微乎其微。但只要概率不是 0，我们就继续按最优解去赌。"
-        },
-        { 
-            gold: "最高优先级指令：传奇教练。为了达到 100 满分，我们需要激进地清除概率池。这是数学上唯一能拉高极限胜率的动作。",
-            blue: "中期关键手：稀有教练。在淘汰废属性和保留点数之间寻找唯一的生机。这是通往 100 分的最优贝叶斯路径。",
-            white: "系统红线！严禁使用高级教练。任何溢出消耗都会将达到 100 的概率直接归零。强制执行普通教练单抽。",
-            luck99: "绝对优势：冲刺 100 的路线图极其清晰。保持执行力。",
-            luck97: "均值博弈：目前属于正常发育，达成 100 分的概率依然掌握在策略手中。",
-            luck95: "高危预警：冗余点数消耗过度。冲击 100 的数学概率正在断崖式下跌，必须执行极端止损。",
-            luck0:  "战术灾难：前期的无效消耗已经摧毁了基盘。现在我们只是在数学废墟里寻找奇迹。"
-        },
-        { 
-            gold: "既然立下了 100 分的军令状，开局就得下猛药。金教练安排上，把那些边角料属性赶紧喂饱，别让它们后期出来作妖。",
-            blue: "现在的局势很微妙，蓝教练是最好的破局点。温水煮青蛙，一点点剥离杂质，把 100 分的火种护住。",
-            white: "停下！别冲动。你的点数如果再用大教练，连 98 都保不住，更别提 100 了。现在只能靠白教练一刀一刀去抠那个奇迹。",
-            luck99: "极品天胡：这张卡底子太棒了。只要咱们不犯错，100 抢断就是你的囊中之物。",
-            luck97: "发育优良：冲击 100 的概率非常可观。稳住心态，别因为一次歪属性就乱了阵脚。",
-            luck95: "步步惊心：说实话，这卡想冲 100 已经有点吃力了。但咱们既然定了目标，就咬牙按推荐走，拼一把。",
-            luck0:  "绝地求生：这卡之前的走势确实糟糕，100 分的希望很渺茫。但练卡就是不到最后一刻不放弃，咱们继续干！"
+            gold: "既然立了目标，就不留退路。用金教练强开覆盖，利用 +3 的爆发力，哪怕爆仓也能强行灌分，这是直达目标胜率最高的打法。",
+            blue: "这回合用蓝教练。金教练爆仓平分后容易被高权重属性拖累，白教练单点效率又太低。蓝教练 +2 的爆发刚好能让你在耗点和收益间找到绝杀机会。",
+            white: "容量已经极度危险。现在任何高级教练都会大概率触发平分惩罚，把目标的希望彻底稀释掉。切白教练，用最小代价死抠这最后的胜率！",
+            luck99: "盘面极佳：这张卡就是为你的目标而生的。只要你不手贱乱点，稳稳的防卫者。",
+            luck97: "走势良好：目前保留了冲击目标的优良火种。按策略执行，我们就是在买最大的赢面。",
+            luck95: "容错极低：现在的处境非常被动。接下来的每一步都必须精确到小数点，没有退路。",
+            luck0:  "濒临死局：老实说，这卡冲击目标的希望极其渺茫了。但既然要赌命，我们就用策略去抢那哪怕微乎其微的奇迹。"
         }
     ];
 
-    // 核心修复1：使用 parseFloat 精准抓取小数输入
     function getVal(id) { return parseFloat(document.getElementById(id).value) || 0; }
+
+    function applyDlsColor(inputEl, val, isSub) {
+        if (!val || val === 0) {
+            inputEl.style.color = isSub ? "var(--text-muted)" : "var(--text-main)";
+            return;
+        }
+        if (val >= 90) {
+            inputEl.style.color = "var(--dls-blue)";
+        } else if (val >= 80) {
+            inputEl.style.color = "var(--dls-green)";
+        } else if (val >= 70) {
+            inputEl.style.color = "var(--dls-yellow)";
+        } else {
+            inputEl.style.color = "var(--dls-red)";
+        }
+    }
 
     window.updateDashboard = function() {
         let remain = 0;
@@ -179,20 +173,22 @@
             let curr = getVal(`curr_${stat.id}`);
             if (target === 0 || curr === 0) isReady = false;
             
-            // 核心机制：允许负数抵扣，真实还原全局容量消耗
             remain += (target - curr) * stat.weight;
             
             const inputCurr = document.getElementById(`curr_${stat.id}`);
+            const inputTarget = document.getElementById(`target_${stat.id}`);
+            
+            applyDlsColor(inputCurr, curr, false);
+            applyDlsColor(inputTarget, target, true);
+
+            // 动态边框高亮（不论目标多少，只要当前值达到游戏上限 100 都会变色）
             if (curr >= 100) {
-                inputCurr.style.color = "var(--accent-target)";
-                inputCurr.style.borderColor = "var(--accent-target)";
+                inputCurr.style.borderColor = "var(--dls-blue)";
             } else {
-                inputCurr.style.color = "var(--text-main)";
                 inputCurr.style.borderColor = "var(--border-light)";
             }
         });
 
-        // 取1位小数展示，防止 UI 抖动
         const remainEl = document.getElementById('remain-pool');
         remainEl.innerText = remain.toFixed(1).replace(/\.0$/, ''); 
         
@@ -218,22 +214,22 @@
 
     const memo = new Map();
 
-    // 【算法终极重构】：双核驱动。首要追求 Prob(满分胜率)，若相等则用 Exp(期望值) 作为 Tie-breaker。
-    function dp_core(cap, ctrl, pass, shoot, tkl) {
-        if (tkl >= 100) return { prob: 1.0, exp: tkl };
+    // 核心改动：把 target_tkl 作为动态参数传入，代替以前写死的 100
+    function dp_core(cap, ctrl, pass, shoot, tkl, target_tkl) {
+        if (tkl >= target_tkl) return { prob: 1.0, exp: tkl };
         if (cap <= 0) return { prob: 0.0, exp: tkl };
 
-        // 核心修复3：严密的 toFixed 阻断浮点数引起的缓存树击穿
         const key = `${cap.toFixed(3)}_${ctrl.toFixed(3)}_${pass.toFixed(3)}_${shoot.toFixed(3)}_${tkl.toFixed(3)}`;
         if (memo.has(key)) return memo.get(key);
 
         let pool = [];
+        // DLS 游戏机制：属性满 100 就不再进入抽卡池，这跟你的目标没关系
         if (ctrl < 100) pool.push({id: 'ctrl', w: 2});
         if (pass < 100) pool.push({id: 'pass', w: 1});
         if (shoot < 100) pool.push({id: 'shoot', w: 1});
         if (tkl < 100) pool.push({id: 'tkl', w: 1});
 
-        if (pool.length === 0) return { prob: tkl >= 100 ? 1.0 : 0.0, exp: tkl };
+        if (pool.length === 0) return { prob: tkl >= target_tkl ? 1.0 : 0.0, exp: tkl };
 
         let maxProb = -1;
         let maxExpForMaxProb = -1;
@@ -245,14 +241,23 @@
             let sumExp = 0;
 
             for (let combo of combos) {
-                let cost = 0, hasTkl = false;
-                for (let s of combo) { cost += s.w * action; if (s.id === 'tkl') hasTkl = true; }
+                let sumWeight = 0;
+                let hasTkl = false;
+                
+                for (let s of combo) { 
+                    sumWeight += s.w; 
+                    if (s.id === 'tkl') hasTkl = true; 
+                }
+                
+                let cost = sumWeight * action;
 
                 if (cost > cap) {
-                    let pointsPerItem = cap / combo.length;
-                    let gainedTkl = hasTkl ? pointsPerItem : 0;
+                    let gainedStat = cap / sumWeight;
+                    let gainedTkl = hasTkl ? Math.min(action, gainedStat) : 0; 
+                    // 游戏硬上限依然是 100
                     let finalTkl = Math.min(100, tkl + gainedTkl);
-                    sumProb += finalTkl >= 100 ? 1.0 : 0.0;
+                    // 但胜率判定改为达到你的自定义 target_tkl
+                    sumProb += finalTkl >= target_tkl ? 1.0 : 0.0;
                     sumExp += finalTkl;
                 } else {
                     let n_ctrl = Math.min(100, ctrl + (combo.some(s=>s.id==='ctrl') ? action : 0));
@@ -260,7 +265,7 @@
                     let n_shoot = Math.min(100, shoot + (combo.some(s=>s.id==='shoot') ? action : 0));
                     let n_tkl = Math.min(100, tkl + (combo.some(s=>s.id==='tkl') ? action : 0));
                     
-                    let res = dp_core(cap - cost, n_ctrl, n_pass, n_shoot, n_tkl);
+                    let res = dp_core(cap - cost, n_ctrl, n_pass, n_shoot, n_tkl, target_tkl);
                     sumProb += res.prob;
                     sumExp += res.exp;
                 }
@@ -268,7 +273,6 @@
             let avgProb = sumProb / combos.length;
             let avgExp = sumExp / combos.length;
 
-            // 核心修复2：加入 Tie-breaker 绝境死锁破解
             if (avgProb > maxProb + 1e-6) {
                 maxProb = avgProb;
                 maxExpForMaxProb = avgExp;
@@ -284,7 +288,7 @@
         return result;
     }
 
-    function evaluateRootActions(cap, ctrl, pass, shoot, tkl) {
+    function evaluateRootActions(cap, ctrl, pass, shoot, tkl, target_tkl) {
         memo.clear(); 
         let pool = [];
         if (ctrl < 100) pool.push({id: 'ctrl', w: 2});
@@ -300,14 +304,21 @@
             let sumExp = 0;
 
             for (let combo of combos) {
-                let cost = 0, hasTkl = false;
-                for (let s of combo) { cost += s.w * action; if (s.id === 'tkl') hasTkl = true; }
+                let sumWeight = 0;
+                let hasTkl = false;
+                
+                for (let s of combo) { 
+                    sumWeight += s.w; 
+                    if (s.id === 'tkl') hasTkl = true; 
+                }
+                
+                let cost = sumWeight * action;
 
                 if (cost > cap) {
-                    let pointsPerItem = cap / combo.length;
-                    let gainedTkl = hasTkl ? pointsPerItem : 0;
+                    let gainedStat = cap / sumWeight;
+                    let gainedTkl = hasTkl ? Math.min(action, gainedStat) : 0;
                     let finalTkl = Math.min(100, tkl + gainedTkl);
-                    sumProb += finalTkl >= 100 ? 1.0 : 0.0;
+                    sumProb += finalTkl >= target_tkl ? 1.0 : 0.0;
                     sumExp += finalTkl;
                 } else {
                     let n_ctrl = Math.min(100, ctrl + (combo.some(s=>s.id==='ctrl') ? action : 0));
@@ -315,15 +326,16 @@
                     let n_shoot = Math.min(100, shoot + (combo.some(s=>s.id==='shoot') ? action : 0));
                     let n_tkl = Math.min(100, tkl + (combo.some(s=>s.id==='tkl') ? action : 0));
                     
-                    let res = dp_core(cap - cost, n_ctrl, n_pass, n_shoot, n_tkl);
+                    let res = dp_core(cap - cost, n_ctrl, n_pass, n_shoot, n_tkl, target_tkl);
                     sumProb += res.prob;
                     sumExp += res.exp;
                 }
             }
             results.push({ 
+                id: action,
                 action: action, 
-                expectedProb: sumProb / combos.length, 
-                expectedExp: sumExp / combos.length 
+                prob: sumProb / combos.length,
+                exp: sumExp / combos.length
             });
         }
         return results;
@@ -331,17 +343,22 @@
 
     function runSDP() {
         updateDashboard(); 
-        const cap = parseFloat(document.getElementById('remain-pool').innerText);
-        const resultDiv = document.getElementById('result');
-
+        
+        let exactCap = 0;
         let allValid = true;
         techStats.forEach(stat => {
-            if (getVal(`curr_${stat.id}`) === 0 || getVal(`target_${stat.id}`) === 0) allValid = false;
+            const target = getVal(`target_${stat.id}`);
+            const curr = getVal(`curr_${stat.id}`);
+            if (target === 0 || curr === 0) allValid = false;
+            exactCap += (target - curr) * stat.weight;
         });
 
+        const resultDiv = document.getElementById('result');
+        const target_tkl = getVal('target_tkl');
+
         if (!allValid) { alert("请把当前的进度和满级模板填满，不然算不出准确容量。"); return; }
-        if (getVal('curr_tkl') >= 100) { alert("抢断已经练满 100 了，无需再测。"); return; }
-        if (cap <= 0) { alert("安全点数不够了，没法继续推演了。"); return; }
+        if (getVal('curr_tkl') >= target_tkl) { alert(`抢断已经达到你设定的目标 ${target_tkl} 了，无需再测。`); return; }
+        if (exactCap <= 0) { alert("安全点数不够了，没法继续推演了。"); return; }
 
         simulationCount++;
 
@@ -350,21 +367,20 @@
         const shoot = getVal('curr_shoot');
         const tkl = getVal('curr_tkl');
 
-        const sdpResults = evaluateRootActions(cap, ctrl, pass, shoot, tkl);
+        // 将动态设定的抢断目标 target_tkl 传入计算引擎
+        const sdpResults = evaluateRootActions(exactCap, ctrl, pass, shoot, tkl, target_tkl);
 
         let results = [
-            { id: 1, name: '普通教练 (白)', prob: sdpResults.find(r=>r.action===1).expectedProb, exp: sdpResults.find(r=>r.action===1).expectedExp },
-            { id: 2, name: '稀有教练 (蓝)', prob: sdpResults.find(r=>r.action===2).expectedProb, exp: sdpResults.find(r=>r.action===2).expectedExp },
-            { id: 3, name: '传奇教练 (金)', prob: sdpResults.find(r=>r.action===3).expectedProb, exp: sdpResults.find(r=>r.action===3).expectedExp }
+            { id: 1, name: '普通教练 (白)', prob: sdpResults.find(r=>r.id===1).prob, exp: sdpResults.find(r=>r.id===1).exp },
+            { id: 2, name: '稀有教练 (蓝)', prob: sdpResults.find(r=>r.id===2).prob, exp: sdpResults.find(r=>r.id===2).exp },
+            { id: 3, name: '传奇教练 (金)', prob: sdpResults.find(r=>r.id===3).prob, exp: sdpResults.find(r=>r.id===3).exp }
         ];
 
-        // 双层排序拦截器：先看胜率，同胜率下看期望值
-        results.sort((a, b) => {
+        let sortedResults = [...results].sort((a, b) => {
             if (Math.abs(b.prob - a.prob) > 1e-6) return b.prob - a.prob;
-            return b.exp - a.exp;
+            return b.exp - a.exp; 
         });
-        
-        let best = results[0];
+        let best = sortedResults[0];
 
         const personaIdx = Math.floor(Math.random() * textPersonas.length);
         const p = textPersonas[personaIdx];
@@ -375,7 +391,6 @@
         else heroText = p.blue;
 
         let maxProb = best.prob;
-        let bestExp = best.exp; // 提取用来做表格展示
         let score = 1;
         if (maxProb >= 0.8) score = 10;
         else if (maxProb >= 0.6) score = 9;
@@ -404,23 +419,22 @@
             }
         }
 
-        let stepCap = Math.max(1, Math.floor(cap / 4));
-        let capStages = [cap, Math.max(0, cap - stepCap), Math.max(0, cap - 2*stepCap), Math.max(0, cap - 3*stepCap), 0];
-        capStages = [...new Set(capStages)].sort((a,b) => b-a);
-        
-        let tableHeaders = "";
         let tableData = "";
-        
-        capStages.forEach((c, index) => {
-            let label = index === 0 ? "当前" : (c === 0 ? "满级极限" : `剩 ${c} 点`);
-            tableHeaders += `<th>${label}</th>`;
+        results.forEach(r => {
+            let isBest = (r.id === best.id);
+            let rowStyle = isBest ? `style="background-color: #e8f5e9; border: 2px solid var(--accent-target);"` : "";
+            let nameDisplay = isBest ? `<strong>${r.name} 🎯</strong>` : r.name;
+            let probDisplay = `<strong>${(r.prob * 100).toFixed(2)}%</strong>`;
+            let expDisplay = r.exp.toFixed(2);
             
-            // 使用期望值绘制表格，避免胜率表格全掉向 0% 引发恐慌
-            let progressRatio = (cap - c) / cap;
-            let projectedTkl = tkl + (bestExp - tkl) * progressRatio;
-            tableData += `<td>${projectedTkl.toFixed(1)}</td>`;
+            tableData += `<tr ${rowStyle}>
+                <td>${nameDisplay}</td>
+                <td style="color: ${isBest ? 'var(--accent-target)' : 'inherit'};">${probDisplay}</td>
+                <td style="color: var(--text-muted);">${expDisplay}</td>
+            </tr>`;
         });
 
+        // 动态替换文本中的目标数值
         let html = `
             <div class="hero-rec">
                 ${luckHtml}
@@ -428,14 +442,14 @@
                 <div class="hero-desc">${heroText}</div>
                 
                 <div style="font-size:14px; margin: 15px 0; font-family:var(--font-mono); font-weight:bold; color:var(--accent-target);">
-                    🎯 满分(100)极限胜率：${(maxProb * 100).toFixed(2)}%
+                    🎯 目标(${target_tkl})极化胜率：${(maxProb * 100).toFixed(2)}%
                 </div>
 
                 <div class="trend-table-wrapper">
-                    <div class="trend-table-title">如果不爆冷，抢断数值的预期走势：</div>
+                    <div class="trend-table-title">🔬 底层穷举面板：当前盘面三种战术的【真实目标胜率】对比</div>
                     <table class="trend-table">
-                        <tr>${tableHeaders}</tr>
-                        <tr>${tableData}</tr>
+                        <tr><th>教练策略</th><th>达成 ${target_tkl} 抢断的绝对胜率</th><th>如果失败(平均卡在多少)</th></tr>
+                        ${tableData}
                     </table>
                 </div>
             </div>
@@ -445,6 +459,7 @@
         resultDiv.innerHTML = html;
     }
 
+    // 页面加载时初始化一次颜色
     updateDashboard();
 </script>
 
