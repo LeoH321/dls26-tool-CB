@@ -3,143 +3,119 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DLS26 普卡后卫训练推荐器</title>
+    <title>DLS26 后卫训练推荐器</title>
     <style>
         :root {
-            --bg-color: #0d1117;
-            --card-bg: #161b22;
-            --card-border: #30363d;
-            --primary-text: #e6edf3;
-            --secondary-text: #8b949e;
-            --blue-light: #58a6ff;
-            --green-light: #3fb950;
-            --red-light: #ff7b72;
-            --golden: #f1c40f;
-            --golden-bg: linear-gradient(135deg, #2a2510 0%, #1a1708 100%);
-            --maxed-bg: linear-gradient(135deg, #d32f2f 0%, #f57c00 100%); 
-            --font-stack: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            --bg-main: #ffffff;
+            --bg-alt: #f8f9fa;
+            --text-main: #111111;
+            --text-muted: #666666;
+            --border-light: #e0e0e0;
+            --accent-target: #2e7d32;
+            --accent-warn: #d32f2f;
+            --accent-gold: #b8860b;
+            --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, sans-serif;
+            --font-mono: "SF Mono", Menlo, Consolas, monospace;
         }
 
-        body { font-family: var(--font-stack); background-color: var(--bg-color); color: var(--primary-text); margin: 0; padding: 20px; box-sizing: border-box; display: flex; justify-content: center; line-height: 1.5; }
-        .container { max-width: 650px; width: 100%; display: flex; flex-direction: column; gap: 20px; }
+        body { font-family: var(--font-sans); background-color: var(--bg-main); color: var(--text-main); margin: 0; padding: 40px 20px; display: flex; justify-content: center; line-height: 1.5; }
+        .container { max-width: 650px; width: 100%; display: flex; flex-direction: column; gap: 30px; }
 
-        h1 { text-align: center; color: var(--primary-text); margin: 0; font-size: 24px; }
-        .sub-header { text-align: center; color: var(--secondary-text); font-size: 13px; margin: -5px 0 10px 0; }
+        .header { text-align: center; border-bottom: 2px solid var(--text-main); padding-bottom: 15px; }
+        .header h1 { font-size: 22px; font-weight: 700; letter-spacing: 1px; margin: 0; }
 
-        .player-card-wrapper { border-radius: 12px; padding: 25px 15px 15px 15px; transition: all 0.5s ease; position: relative; overflow: hidden; border: 2px solid var(--golden); }
-        .status-normal { background: var(--golden-bg); box-shadow: 0 0 15px rgba(241, 196, 15, 0.15); }
-        .status-maxed { background: var(--maxed-bg); box-shadow: 0 0 25px rgba(211, 47, 47, 0.5); }
+        .matrix-wrapper { background-color: var(--bg-alt); border: 1px solid var(--border-light); border-radius: 8px; padding: 25px 20px; }
+        .data-matrix { display: grid; grid-template-columns: 70px repeat(4, 1fr); gap: 20px 10px; align-items: center; }
+        @media (max-width: 500px) { .data-matrix { grid-template-columns: 55px repeat(4, 1fr); gap: 20px 5px; } }
 
-        .card-title { text-align: center; font-size: 13px; font-weight: bold; letter-spacing: 2px; color: rgba(255,255,255,0.8); margin-bottom: 25px; text-transform: uppercase; display: flex; justify-content: center; align-items: center; gap: 8px; }
-        .max-star { display: inline-flex; justify-content: center; align-items: center; background: #00a8ff; color: white; border-radius: 50%; width: 20px; height: 20px; font-size: 14px; box-shadow: 0 0 8px rgba(0, 168, 255, 0.8); }
+        .col-header { text-align: center; font-size: 13px; font-weight: 600; color: var(--text-main); padding-bottom: 10px; border-bottom: 1px solid var(--border-light); }
+        .col-header.target { color: var(--accent-target); }
+        .col-header small { display: block; font-size: 10px; color: var(--text-muted); font-weight: normal; margin-top: 2px; }
 
-        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; }
-        .stat-col { display: flex; flex-direction: column; align-items: center; gap: 10px; }
-        .stat-name { font-size: 14px; font-weight: bold; color: var(--primary-text); text-align: center; line-height: 1.2; }
-        .stat-name small { font-size: 11px; color: var(--secondary-text); font-weight: normal; }
+        .row-label { font-size: 12px; font-weight: 600; color: var(--text-muted); text-align: right; padding-right: 10px; line-height: 1.2; }
 
-        .double-cost { color: var(--red-light); }
-        .target-tackle { color: #fff; text-shadow: 0 0 8px rgba(255,255,255,0.4); }
-
-        .circle-input-wrapper { position: relative; margin-bottom: 8px; }
+        /* 增加了 step="any" 以完美支持带小数点的数值输入 */
+        input[type=number] { width: 100%; background: transparent; border: none; border-bottom: 1px solid var(--border-light); color: var(--text-main); text-align: center; font-family: var(--font-mono); border-radius: 0; padding: 5px 0; transition: all 0.2s; -moz-appearance: textfield; }
         input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        input[type=number]:focus { outline: none; border-bottom: 2px solid var(--text-main); }
 
-        .circle-input { width: 60px; height: 60px; border-radius: 50%; background-color: #0a0a0a; border: 2px solid #333; color: #fff; text-align: center; font-size: 24px; font-weight: 900; box-shadow: inset 0 0 10px rgba(255,255,255,0.05); transition: 0.3s; padding: 0; box-sizing: border-box; -moz-appearance: textfield; }
-        .circle-input:focus { outline: none; border-color: var(--blue-light); box-shadow: 0 0 15px rgba(88,166,255,0.4); }
+        .input-curr { font-size: 24px; font-weight: 700; color: var(--text-main); border-bottom: 2px solid var(--border-light); }
+        .input-curr:focus { border-bottom-color: var(--text-main); }
+        .input-sub { font-size: 15px; color: var(--text-muted); }
+
+        .dashboard { display: flex; justify-content: center; border-top: 1px solid var(--border-light); border-bottom: 1px solid var(--border-light); padding: 20px 0; }
+        .dash-item { display: flex; flex-direction: column; align-items: center; text-align: center; }
+        .dash-label { font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 8px; }
+        .dash-val { font-family: var(--font-mono); font-size: 36px; font-weight: 700; line-height: 1; }
+
+        .btn-execute { width: 100%; background-color: var(--text-main); color: var(--bg-main); border: none; padding: 16px; font-size: 15px; font-weight: 600; letter-spacing: 1px; cursor: pointer; border-radius: 6px; transition: 0.2s; }
+        .btn-execute:hover { background-color: #333333; }
+
+        .result-container { display: none; flex-direction: column; gap: 20px; animation: fadeIn 0.4s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .hero-rec { background-color: #fafafa; border: 1px solid var(--border-light); border-left: 4px solid var(--text-main); padding: 20px; border-radius: 4px; }
+        .hero-title { font-size: 16px; font-weight: 700; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; color: var(--text-main); }
+        .hero-desc { font-size: 14px; line-height: 1.6; color: #444; margin-bottom: 15px; }
+
+        .status-badge { display: inline-block; padding: 6px 12px; border-radius: 4px; font-size: 13px; font-weight: 600; margin-bottom: 15px; }
+        .status-neutral { background: #f0f0f0; color: #555; border: 1px solid #ddd; }
+        .status-good { background: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9; }
+        .status-mid { background: #e6f7ff; color: #0077b6; border: 1px solid #bae0ff; }
+        .status-warn { background: #fff8e1; color: #f57f17; border: 1px solid #ffecb3; }
+        .status-bad { background: #ffebee; color: #c62828; border: 1px solid #ffcdd2; }
         
-        /* 锁定后，当前输入框保持活跃并有呼吸灯提示 */
-        .is-locked .circle-input { border-color: var(--blue-light); animation: pulseBorder 2s infinite; }
-        @keyframes pulseBorder { 0% { box-shadow: 0 0 0 0 rgba(88,166,255,0.4); } 70% { box-shadow: 0 0 0 6px rgba(88,166,255,0); } 100% { box-shadow: 0 0 0 0 rgba(88,166,255,0); } }
+        .score-highlight { font-family: var(--font-mono); font-size: 15px; font-weight: 800; margin-right: 6px; }
 
-        .circle-label { position: absolute; bottom: -22px; left: 50%; transform: translateX(-50%); font-size: 11px; color: var(--secondary-text); font-weight: bold; transition: 0.3s; }
-        .is-locked .circle-label { color: var(--blue-light); }
+        .trend-table-wrapper { margin-top: 15px; border-top: 1px solid var(--border-light); padding-top: 15px; }
+        .trend-table-title { font-size: 13px; font-weight: 600; color: var(--text-muted); margin-bottom: 10px; }
+        .trend-table { width: 100%; border-collapse: collapse; text-align: center; font-size: 13px; }
+        .trend-table th, .trend-table td { border: 1px solid var(--border-light); padding: 10px 5px; }
+        .trend-table th { background-color: #f8f9fa; color: #555; font-weight: 600; width: 20%; }
+        .trend-table td { font-family: var(--font-mono); font-weight: 600; color: var(--text-main); }
 
-        .sub-inputs { display: flex; flex-direction: column; gap: 8px; width: 100%; margin-top: 15px; }
-        .sub-input-row { display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.4); border-radius: 8px; border: 1px solid rgba(255,255,255,0.05); transition: 0.3s; }
-        .sub-input-row span { font-size: 11px; color: var(--secondary-text); font-weight: bold; padding-left: 6px; }
-        .sub-input-row input { width: 45px; background: transparent; border: none; color: #fff; text-align: right; font-weight: bold; font-size: 14px; padding: 6px; }
-        .sub-input-row input:focus { outline: none; color: var(--golden); }
-        .sub-input-row input:disabled { color: rgba(255,255,255,0.3); }
-
-        .init-row { display: none; padding: 6px 10px; opacity: 0; transform: translateY(-5px); }
-        .init-display { font-size: 14px; font-weight: bold; color: var(--golden); }
-
-        .is-locked .init-row { display: flex; animation: slideDownFade 0.3s forwards ease-out; }
-        @keyframes slideDownFade { to { opacity: 1; transform: translateY(0); } }
-
-        @media (max-width: 600px) { .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 32px 15px; } }
-
-        .action-zone { display: flex; gap: 10px; margin-bottom: 5px; }
-        .btn-lock { flex: 1; background-color: #d2a8ff; color: #0d1117; border: none; padding: 14px; font-size: 16px; border-radius: 10px; font-weight: bold; cursor: pointer; transition: 0.2s; box-shadow: 0 0 12px rgba(210,168,255,0.25); }
-        .btn-lock:hover { background-color: #b37feb; transform: translateY(-1px); }
-        .btn-reset { display: none; flex: 1; background-color: #21262d; color: var(--primary-text); border: 1px solid var(--card-border); padding: 12px; font-size: 14px; border-radius: 10px; font-weight: bold; cursor: pointer; transition: 0.2s; }
-        .btn-reset:hover { background-color: #30363d; }
-
-        .dashboard { display: flex; justify-content: space-between; background-color: #010409; padding: 20px; border-radius: 12px; border: 1px solid var(--card-border); margin-bottom: 25px; transition: 0.3s; }
-        .dashboard.unlocked { opacity: 0.4; pointer-events: none; filter: grayscale(100%); }
-        .dash-item { text-align: center; flex: 1; }
-        .dash-value { font-size: 28px; font-weight: 900; margin-top: 8px; font-family: monospace; transition: 0.3s; }
-        @media (max-width: 600px) { .dashboard { flex-direction: column; gap: 15px; padding: 15px; } }
-
-        .btn-sdp { width: 100%; background-color: #2ea043; color: white; border: 1px solid rgba(240,246,252,0.1); padding: 18px; font-size: 18px; border-radius: 12px; font-weight: bold; cursor: pointer; transition: 0.2s; box-shadow: 0 0 15px rgba(46,160,67,0.3); }
-        .btn-sdp:hover { background-color: #3fb950; transform: translateY(-1px); }
-        .btn-sdp:disabled { background-color: #21262d; color: var(--secondary-text); cursor: not-allowed; box-shadow: none; border-color: var(--card-border); transform: none; }
-
-        .result-box { margin-top: 10px; display: none; flex-direction: column; gap: 15px; }
-        
-        /* 顶级战术推荐版块 - 拟人化大字报 */
-        .hero-rec { background: rgba(63, 185, 80, 0.1); border: 1px solid rgba(63, 185, 80, 0.4); border-radius: 12px; padding: 25px; border-left: 8px solid var(--green-light); box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
-        .hero-title { color: var(--green-light); font-size: 18px; font-weight: bold; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; }
-        .hero-content { color: var(--primary-text); font-size: 15px; line-height: 1.7; letter-spacing: 0.3px; }
-        .hero-highlight { color: #fff; font-weight: bold; font-size: 16px; background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; }
-        
-        /* 其他备选预期数据 */
-        .other-options-title { font-size: 13px; color: var(--secondary-text); margin-top: 10px; border-bottom: 1px dashed var(--card-border); padding-bottom: 8px; }
-        .prob-row { padding: 15px; background-color: #0d1117; border-radius: 8px; border: 1px solid var(--card-border); display: flex; justify-content: space-between; align-items: center; }
-        .coach-info { flex: 1; display: flex; align-items: center; gap: 10px; }
-        .color-tag { width: 12px; height: 12px; border-radius: 50%; }
-        .color-A { background-color: #e6edf3; } .color-B { background-color: var(--blue-light); } .color-C { background-color: var(--golden); }
-        .coach-name { font-weight: bold; font-size: 15px; }
-        .expect-info { text-align: right; }
-        .expect-val { font-size: 20px; font-weight: 900; font-family: monospace; color: var(--primary-text); }
-        
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1><span style="font-size:20px;">🎯</span> 抢断极化 · 战术大师</h1>
-    <p class="sub-header">输入一次底层数据，随时更新当前进度</p>
+    <div class="header">
+        <p style="margin: 0 0 5px 0; font-size: 13px; color: var(--text-main); font-weight: bold;">微信公众号：DLS26China</p>
+        <h1>后卫练卡推演</h1>
+    </div>
 
-    <div id="player-card" class="player-card-wrapper status-normal">
-        <div class="card-title" id="card-title">
-            <span id="card-title-text">- 等待输入底座与模板 -</span>
+    <div class="matrix-wrapper">
+        <div id="data-matrix" class="data-matrix">
+            <div></div>
+            <div class="col-header">控制</div>
+            <div class="col-header">传球</div>
+            <div class="col-header">射门</div>
+            <div class="col-header target">抢断 <small>(目标)</small></div>
+
+            <div class="row-label">当前<br>进度</div>
+            <input type="number" step="any" class="input-curr" id="curr_ctrl" placeholder="-" oninput="updateDashboard()">
+            <input type="number" step="any" class="input-curr" id="curr_pass" placeholder="-" oninput="updateDashboard()">
+            <input type="number" step="any" class="input-curr" id="curr_shoot" placeholder="-" oninput="updateDashboard()">
+            <input type="number" step="any" class="input-curr" id="curr_tkl" placeholder="-" oninput="updateDashboard()">
+
+            <div class="row-label">满级<br>模板</div>
+            <input type="number" step="any" class="input-sub" id="target_ctrl" placeholder="-" oninput="updateDashboard()">
+            <input type="number" step="any" class="input-sub" id="target_pass" placeholder="-" oninput="updateDashboard()">
+            <input type="number" step="any" class="input-sub" id="target_shoot" placeholder="-" oninput="updateDashboard()">
+            <input type="number" step="any" class="input-sub" id="target_tkl" placeholder="-" value="100" readonly style="color:var(--accent-target); font-weight:bold;">
         </div>
-        <div id="tech-grid" class="stats-grid"></div>
     </div>
 
-    <div class="action-zone">
-        <button id="btn-lock" class="btn-lock" onclick="lockData()">🔒 确认数据</button>
-        <button id="btn-reset" class="btn-reset" onclick="resetData()">🔄 修改模板数据</button>
-    </div>
-
-    <div id="dashboard" class="dashboard unlocked">
+    <div class="dashboard">
         <div class="dash-item">
-            <div style="color: var(--secondary-text); font-size: 12px;">技术总容量</div>
-            <div id="total-pool" class="dash-value" style="color: var(--blue-light);">0</div>
-        </div>
-        <div class="dash-item" style="border-left: 1px solid var(--card-border); border-right: 1px solid var(--card-border);">
-            <div style="color: var(--secondary-text); font-size: 12px;">已被吞噬</div>
-            <div id="used-pool" class="dash-value" style="color: var(--red-light);">0</div>
-        </div>
-        <div class="dash-item">
-            <div style="color: var(--secondary-text); font-size: 12px;">剩余点数</div>
-            <div id="remain-pool" class="dash-value" style="color: var(--green-light);">0</div>
+            <span class="dash-label">剩余安全容量 (点)</span>
+            <span id="remain-pool" class="dash-val" style="color: var(--accent-target);">0</span>
         </div>
     </div>
 
-    <button id="btn-sdp" class="btn-sdp" onclick="runSDP()" disabled>🚀 测算本回合终极战术</button>
-    <div id="result" class="result-box"></div>
+    <button id="btn-sdp" class="btn-execute" onclick="runSDP()">开始模拟</button>
+    
+    <div id="result" class="result-container"></div>
 </div>
 
 <script>
@@ -150,126 +126,82 @@
         { id: 'tkl', name: '抢断', weight: 1, isTarget: true }
     ];
 
-    window.initData = { ctrl: 0, pass: 0, shoot: 0, tkl: 0 };
-    window.isLocked = false;
+    let simulationCount = 0;
 
-    function createStatCol(stat) {
-        const labelClass = stat.weight === 2 ? 'double-cost' : (stat.isTarget ? 'target-tackle' : '');
-        return `
-            <div class="stat-col">
-                <div class="stat-name ${labelClass}">${stat.isTarget ? '🎯 ' : ''}${stat.name}</div>
-                <div class="circle-input-wrapper">
-                    <input class="circle-input" type="number" id="curr_${stat.id}" placeholder="-" oninput="updateDashboard()">
-                    <div class="circle-label">当前数值</div>
-                </div>
-                <div class="sub-inputs">
-                    <div class="sub-input-row init-row" id="init_row_${stat.id}">
-                        <span>底座起点</span>
-                        <span id="display_init_${stat.id}" class="init-display">-</span>
-                    </div>
-                    <div class="sub-input-row target-row">
-                        <span>满级目标</span>
-                        <input type="number" class="target-input" id="target_${stat.id}" placeholder="-" oninput="updateDashboard()">
-                    </div>
-                </div>
-            </div>
-        `;
-    }
+    const textPersonas = [
+        { 
+            gold: "既然只搏 100 满分，就不留退路了。用金教练强杀废属性，只要这把能洗掉杂质，后面才有直通 100 的可能。别心疼底子，干就完了。",
+            blue: "这回合用蓝教练。金教练爆仓风险太大，直接葬送满分希望；白教练太拖节奏。蓝教练是唯一能让你保住那一丝 100 分概率的独木桥。",
+            white: "容量已经极度危险。现在任何高级教练都会直接引爆平分惩罚，彻底断送 100 分的可能。切白教练，死抠这最后的胜率！",
+            luck99: "盘面极佳：这张卡就是为 100 抢断生的。只要你不手贱乱点，稳稳的满分防卫者。",
+            luck97: "走势良好：目前保留了冲击 100 分的优良火种。按策略执行，我们就是在买最大的赢面。",
+            luck95: "容错极低：因为只搏 100 分，你现在的处境非常被动。接下来的每一步都必须精确到小数点，没有退路。",
+            luck0:  "濒临死局：老实说，这卡冲击 100 的希望极其渺茫了。但既然要赌命，我们就用策略去抢那哪怕 1% 的奇迹。"
+        },
+        { 
+            gold: "听我的，要 100 满分就得敢下重注。金教练直接上，要么死要么神，把废属性全部顶爆，给抢断腾路！",
+            blue: "上蓝教练。纯赌狗玩法也得讲究基本法，蓝教练能让废属性快速退场，还不至于一把把家底全败光，这是搏 100 的最佳跳板。",
+            white: "没筹码了兄弟，赶紧切白教练。你的点数已经不允许任何激进了，用白底慢慢磨，强行吊住这口 100 分的气。",
+            luck99: "完美开局：系统发牌员已经在对你笑了，这把不出 100 我倒立洗头。",
+            luck97: "稳中向好：目前冲击 100 的希望非常大。别浪，严守纪律。",
+            luck95: "赌徒狂欢：这卡的 100 分概率已经被你挥霍得差不多了，接下来就是真正的极限微操，生死有命。",
+            luck0:  "命悬一线：这卡基本算是废了，满分希望微乎其微。但只要概率不是 0，我们就继续按最优解去赌。"
+        },
+        { 
+            gold: "最高优先级指令：传奇教练。为了达到 100 满分，我们需要激进地清除概率池。这是数学上唯一能拉高极限胜率的动作。",
+            blue: "中期关键手：稀有教练。在淘汰废属性和保留点数之间寻找唯一的生机。这是通往 100 分的最优贝叶斯路径。",
+            white: "系统红线！严禁使用高级教练。任何溢出消耗都会将达到 100 的概率直接归零。强制执行普通教练单抽。",
+            luck99: "绝对优势：冲刺 100 的路线图极其清晰。保持执行力。",
+            luck97: "均值博弈：目前属于正常发育，达成 100 分的概率依然掌握在策略手中。",
+            luck95: "高危预警：冗余点数消耗过度。冲击 100 的数学概率正在断崖式下跌，必须执行极端止损。",
+            luck0:  "战术灾难：前期的无效消耗已经摧毁了基盘。现在我们只是在数学废墟里寻找奇迹。"
+        },
+        { 
+            gold: "既然立下了 100 分的军令状，开局就得下猛药。金教练安排上，把那些边角料属性赶紧喂饱，别让它们后期出来作妖。",
+            blue: "现在的局势很微妙，蓝教练是最好的破局点。温水煮青蛙，一点点剥离杂质，把 100 分的火种护住。",
+            white: "停下！别冲动。你的点数如果再用大教练，连 98 都保不住，更别提 100 了。现在只能靠白教练一刀一刀去抠那个奇迹。",
+            luck99: "极品天胡：这张卡底子太棒了。只要咱们不犯错，100 抢断就是你的囊中之物。",
+            luck97: "发育优良：冲击 100 的概率非常可观。稳住心态，别因为一次歪属性就乱了阵脚。",
+            luck95: "步步惊心：说实话，这卡想冲 100 已经有点吃力了。但咱们既然定了目标，就咬牙按推荐走，拼一把。",
+            luck0:  "绝地求生：这卡之前的走势确实糟糕，100 分的希望很渺茫。但练卡就是不到最后一刻不放弃，咱们继续干！"
+        }
+    ];
 
-    document.getElementById('tech-grid').innerHTML = techStats.map(s => createStatCol(s)).join('');
-
-    function getVal(type, id) { return parseInt(document.getElementById(`${type}_${id}`).value) || 0; }
-
-    window.lockData = function() {
-        let allValid = true;
-        techStats.forEach(stat => {
-            let curr = getVal('curr', stat.id);
-            let target = getVal('target', stat.id);
-            if (curr === 0 || target === 0) allValid = false;
-        });
-
-        if (!allValid) { alert("bro，先在黑圈里填好目前的属性，并在下面填好满级模板再锁定！"); return; }
-
-        techStats.forEach(stat => {
-            let curr = getVal('curr', stat.id);
-            window.initData[stat.id] = curr;
-            document.getElementById(`display_init_${stat.id}`).innerText = curr;
-            document.getElementById(`target_${stat.id}`).disabled = true; 
-        });
-
-        window.isLocked = true;
-        document.getElementById('tech-grid').classList.add('is-locked');
-        
-        document.getElementById('btn-lock').style.display = 'none';
-        document.getElementById('btn-reset').style.display = 'block';
-        document.getElementById('dashboard').classList.remove('unlocked');
-        document.getElementById('btn-sdp').disabled = false;
-        document.getElementById('card-title-text').innerText = "🟢 存档已锁定 · 记得更新上方黑圈";
-
-        updateDashboard();
-    }
-
-    window.resetData = function() {
-        window.isLocked = false;
-        document.getElementById('tech-grid').classList.remove('is-locked');
-        techStats.forEach(stat => {
-            document.getElementById(`display_init_${stat.id}`).innerText = '-';
-            document.getElementById(`target_${stat.id}`).disabled = false;
-        });
-        document.getElementById('btn-lock').style.display = 'block';
-        document.getElementById('btn-reset').style.display = 'none';
-        document.getElementById('dashboard').classList.add('unlocked');
-        document.getElementById('btn-sdp').disabled = true;
-        document.getElementById('card-title-text').innerText = "- 等待输入底座与模板 -";
-        document.getElementById('result').style.display = 'none';
-        document.getElementById('player-card').className = 'player-card-wrapper status-normal';
-        updateDashboard();
-    }
+    // 核心修复1：使用 parseFloat 精准抓取小数输入
+    function getVal(id) { return parseFloat(document.getElementById(id).value) || 0; }
 
     window.updateDashboard = function() {
-        if (!window.isLocked) return;
+        let remain = 0;
+        let isReady = true;
 
-        let totalPool = 0, usedPool = 0;
-        
         techStats.forEach(stat => {
-            const init = window.initData[stat.id];
-            const target = getVal('target', stat.id);
-            let curr = getVal('curr', stat.id);
+            const target = getVal(`target_${stat.id}`);
+            let curr = getVal(`curr_${stat.id}`);
+            if (target === 0 || curr === 0) isReady = false;
             
-            if (curr < init && curr !== 0) {
-                curr = init;
-                document.getElementById(`curr_${stat.id}`).value = init;
-            }
-
-            totalPool += Math.max(0, target - init) * stat.weight;
-            usedPool += Math.max(0, curr - init) * stat.weight;
+            // 核心机制：允许负数抵扣，真实还原全局容量消耗
+            remain += (target - curr) * stat.weight;
             
-            const circle = document.getElementById(`curr_${stat.id}`);
+            const inputCurr = document.getElementById(`curr_${stat.id}`);
             if (curr >= 100) {
-                circle.style.borderColor = "var(--green-light)";
-                circle.style.color = "var(--green-light)";
-                circle.style.boxShadow = "inset 0 0 15px rgba(63,185,80,0.3)";
+                inputCurr.style.color = "var(--accent-target)";
+                inputCurr.style.borderColor = "var(--accent-target)";
             } else {
-                circle.style.borderColor = "var(--blue-light)";
-                circle.style.color = "#fff";
+                inputCurr.style.color = "var(--text-main)";
+                inputCurr.style.borderColor = "var(--border-light)";
             }
         });
 
-        document.getElementById('total-pool').innerText = totalPool;
-        document.getElementById('used-pool').innerText = usedPool;
-        let remain = totalPool - usedPool;
-        document.getElementById('remain-pool').innerText = remain;
-        document.getElementById('remain-pool').style.color = remain >= 12 ? "var(--green-light)" : (remain >= 6 ? "var(--golden)" : "var(--red-light)");
-
-        const cardWrapper = document.getElementById('player-card');
-        const cardTitle = document.getElementById('card-title');
+        // 取1位小数展示，防止 UI 抖动
+        const remainEl = document.getElementById('remain-pool');
+        remainEl.innerText = remain.toFixed(1).replace(/\.0$/, ''); 
         
-        if (remain <= 0) {
-            cardWrapper.className = 'player-card-wrapper status-maxed';
-            cardTitle.innerHTML = `<span class="max-star">★</span> <span id="card-title-text" style="color: #fff;">训练完毕 / 潜能已完全榨干</span>`;
+        if (remain <= 0 && isReady) {
+            remainEl.style.color = "var(--accent-warn)";
+            document.getElementById('btn-sdp').innerText = "潜能已满 (容量耗尽)";
         } else {
-            cardWrapper.className = 'player-card-wrapper status-normal';
-            cardTitle.innerHTML = `<span id="card-title-text">🟢 存档已锁定 · 每回合练完直接改黑圈</span>`;
+            remainEl.style.color = remain >= 12 ? "var(--accent-target)" : (remain >= 6 ? "var(--accent-gold)" : "var(--accent-warn)");
+            document.getElementById('btn-sdp').innerText = "开始模拟";
         }
     }
 
@@ -286,10 +218,13 @@
 
     const memo = new Map();
 
-    function dp(cap, ctrl, pass, shoot, tkl) {
-        if (tkl >= 100) return 100;
-        if (cap <= 0) return tkl;
-        const key = `${cap}_${ctrl}_${pass}_${shoot}_${tkl}`;
+    // 【算法终极重构】：双核驱动。首要追求 Prob(满分胜率)，若相等则用 Exp(期望值) 作为 Tie-breaker。
+    function dp_core(cap, ctrl, pass, shoot, tkl) {
+        if (tkl >= 100) return { prob: 1.0, exp: tkl };
+        if (cap <= 0) return { prob: 0.0, exp: tkl };
+
+        // 核心修复3：严密的 toFixed 阻断浮点数引起的缓存树击穿
+        const key = `${cap.toFixed(3)}_${ctrl.toFixed(3)}_${pass.toFixed(3)}_${shoot.toFixed(3)}_${tkl.toFixed(3)}`;
         if (memo.has(key)) return memo.get(key);
 
         let pool = [];
@@ -297,35 +232,56 @@
         if (pass < 100) pool.push({id: 'pass', w: 1});
         if (shoot < 100) pool.push({id: 'shoot', w: 1});
         if (tkl < 100) pool.push({id: 'tkl', w: 1});
-        if (pool.length === 0) return tkl;
 
-        let maxExpected = 0;
+        if (pool.length === 0) return { prob: tkl >= 100 ? 1.0 : 0.0, exp: tkl };
+
+        let maxProb = -1;
+        let maxExpForMaxProb = -1;
+
         for (let action of [1, 2, 3]) {
             let numPicks = Math.min(action, pool.length);
             let combos = getCombinations(pool, numPicks);
-            let expectedForAction = 0;
+            let sumProb = 0;
+            let sumExp = 0;
 
             for (let combo of combos) {
                 let cost = 0, hasTkl = false;
                 for (let s of combo) { cost += s.w * action; if (s.id === 'tkl') hasTkl = true; }
 
                 if (cost > cap) {
-                    let fraction = cap / cost;
-                    let gainedTkl = hasTkl ? action * fraction : 0;
-                    expectedForAction += Math.min(100, tkl + gainedTkl);
+                    let pointsPerItem = cap / combo.length;
+                    let gainedTkl = hasTkl ? pointsPerItem : 0;
+                    let finalTkl = Math.min(100, tkl + gainedTkl);
+                    sumProb += finalTkl >= 100 ? 1.0 : 0.0;
+                    sumExp += finalTkl;
                 } else {
                     let n_ctrl = Math.min(100, ctrl + (combo.some(s=>s.id==='ctrl') ? action : 0));
                     let n_pass = Math.min(100, pass + (combo.some(s=>s.id==='pass') ? action : 0));
                     let n_shoot = Math.min(100, shoot + (combo.some(s=>s.id==='shoot') ? action : 0));
                     let n_tkl = Math.min(100, tkl + (combo.some(s=>s.id==='tkl') ? action : 0));
-                    expectedForAction += dp(cap - cost, n_ctrl, n_pass, n_shoot, n_tkl);
+                    
+                    let res = dp_core(cap - cost, n_ctrl, n_pass, n_shoot, n_tkl);
+                    sumProb += res.prob;
+                    sumExp += res.exp;
                 }
             }
-            expectedForAction /= combos.length; 
-            if (expectedForAction > maxExpected) maxExpected = expectedForAction;
+            let avgProb = sumProb / combos.length;
+            let avgExp = sumExp / combos.length;
+
+            // 核心修复2：加入 Tie-breaker 绝境死锁破解
+            if (avgProb > maxProb + 1e-6) {
+                maxProb = avgProb;
+                maxExpForMaxProb = avgExp;
+            } else if (Math.abs(avgProb - maxProb) <= 1e-6) {
+                if (avgExp > maxExpForMaxProb) {
+                    maxExpForMaxProb = avgExp;
+                }
+            }
         }
-        memo.set(key, maxExpected);
-        return maxExpected;
+
+        let result = { prob: maxProb, exp: maxExpForMaxProb };
+        memo.set(key, result);
+        return result;
     }
 
     function evaluateRootActions(cap, ctrl, pass, shoot, tkl) {
@@ -340,95 +296,156 @@
         for (let action of [1, 2, 3]) {
             let numPicks = Math.min(action, pool.length);
             let combos = getCombinations(pool, numPicks);
-            let expectedForAction = 0;
+            let sumProb = 0;
+            let sumExp = 0;
 
             for (let combo of combos) {
                 let cost = 0, hasTkl = false;
                 for (let s of combo) { cost += s.w * action; if (s.id === 'tkl') hasTkl = true; }
 
                 if (cost > cap) {
-                    let fraction = cap / cost;
-                    let gainedTkl = hasTkl ? action * fraction : 0;
-                    expectedForAction += Math.min(100, tkl + gainedTkl);
+                    let pointsPerItem = cap / combo.length;
+                    let gainedTkl = hasTkl ? pointsPerItem : 0;
+                    let finalTkl = Math.min(100, tkl + gainedTkl);
+                    sumProb += finalTkl >= 100 ? 1.0 : 0.0;
+                    sumExp += finalTkl;
                 } else {
                     let n_ctrl = Math.min(100, ctrl + (combo.some(s=>s.id==='ctrl') ? action : 0));
                     let n_pass = Math.min(100, pass + (combo.some(s=>s.id==='pass') ? action : 0));
                     let n_shoot = Math.min(100, shoot + (combo.some(s=>s.id==='shoot') ? action : 0));
                     let n_tkl = Math.min(100, tkl + (combo.some(s=>s.id==='tkl') ? action : 0));
-                    expectedForAction += dp(cap - cost, n_ctrl, n_pass, n_shoot, n_tkl);
+                    
+                    let res = dp_core(cap - cost, n_ctrl, n_pass, n_shoot, n_tkl);
+                    sumProb += res.prob;
+                    sumExp += res.exp;
                 }
             }
-            expectedForAction /= combos.length;
-            results.push({ action: action, expectedTkl: expectedForAction });
+            results.push({ 
+                action: action, 
+                expectedProb: sumProb / combos.length, 
+                expectedExp: sumExp / combos.length 
+            });
         }
         return results;
     }
 
     function runSDP() {
-        if (!window.isLocked) return;
-        
-        const cap = parseInt(document.getElementById('remain-pool').innerText);
+        updateDashboard(); 
+        const cap = parseFloat(document.getElementById('remain-pool').innerText);
         const resultDiv = document.getElementById('result');
 
-        if (getVal('curr', 'tkl') >= 100) { alert("抢断已达 100，完美毕业！🎯"); return; }
-        if (cap <= 0) { alert("潜能池已完全耗尽！"); return; }
+        let allValid = true;
+        techStats.forEach(stat => {
+            if (getVal(`curr_${stat.id}`) === 0 || getVal(`target_${stat.id}`) === 0) allValid = false;
+        });
 
-        const ctrl = getVal('curr', 'ctrl');
-        const pass = getVal('curr', 'pass');
-        const shoot = getVal('curr', 'shoot');
-        const tkl = getVal('curr', 'tkl');
+        if (!allValid) { alert("请把当前的进度和满级模板填满，不然算不出准确容量。"); return; }
+        if (getVal('curr_tkl') >= 100) { alert("抢断已经练满 100 了，无需再测。"); return; }
+        if (cap <= 0) { alert("安全点数不够了，没法继续推演了。"); return; }
+
+        simulationCount++;
+
+        const ctrl = getVal('curr_ctrl');
+        const pass = getVal('curr_pass');
+        const shoot = getVal('curr_shoot');
+        const tkl = getVal('curr_tkl');
 
         const sdpResults = evaluateRootActions(cap, ctrl, pass, shoot, tkl);
 
         let results = [
-            { id: 1, name: '⚪ 普通教练', val: sdpResults.find(r=>r.action===1).expectedTkl, tagClass: 'color-A' },
-            { id: 2, name: '🔵 稀有教练', val: sdpResults.find(r=>r.action===2).expectedTkl, tagClass: 'color-B' },
-            { id: 3, name: '👑 传奇教练', val: sdpResults.find(r=>r.action===3).expectedTkl, tagClass: 'color-C' }
+            { id: 1, name: '普通教练 (白)', prob: sdpResults.find(r=>r.action===1).expectedProb, exp: sdpResults.find(r=>r.action===1).expectedExp },
+            { id: 2, name: '稀有教练 (蓝)', prob: sdpResults.find(r=>r.action===2).expectedProb, exp: sdpResults.find(r=>r.action===2).expectedExp },
+            { id: 3, name: '传奇教练 (金)', prob: sdpResults.find(r=>r.action===3).expectedProb, exp: sdpResults.find(r=>r.action===3).expectedExp }
         ];
 
-        results.sort((a, b) => b.val - a.val);
+        // 双层排序拦截器：先看胜率，同胜率下看期望值
+        results.sort((a, b) => {
+            if (Math.abs(b.prob - a.prob) > 1e-6) return b.prob - a.prob;
+            return b.exp - a.exp;
+        });
+        
         let best = results[0];
 
-        // 拟人化战术语言生成
+        const personaIdx = Math.floor(Math.random() * textPersonas.length);
+        const p = textPersonas[personaIdx];
+
         let heroText = "";
-        if (best.id === 3) {
-            heroText = `现在的底盘容量还算充裕。虽然用金教练消耗大，但它能帮你**极速填满不需要的废属性（比如传球或射门）**，把它们提前踢出随机池！按照系统推演，只要这回合果断砸金教练，长线换来的抢断收益绝对是最高的。别心疼，直接上！`;
-        } else if (best.id === 1) {
-            heroText = `兄弟，快停手！你的潜能余额已经红牌警告了！现在的容量根本兜不住高级教练的爆仓惩罚，一旦触发系统的强制平分机制，你的抢断绝对拉不满。这回合只能**单吊白教练**，用最小的成本去磨概率，稳住目前的盘口！`;
+        if (best.id === 3) heroText = p.gold;
+        else if (best.id === 1) heroText = p.white;
+        else heroText = p.blue;
+
+        let maxProb = best.prob;
+        let bestExp = best.exp; // 提取用来做表格展示
+        let score = 1;
+        if (maxProb >= 0.8) score = 10;
+        else if (maxProb >= 0.6) score = 9;
+        else if (maxProb >= 0.4) score = 8;
+        else if (maxProb >= 0.2) score = 7;
+        else if (maxProb >= 0.1) score = 6;
+        else if (maxProb >= 0.05) score = 5;
+        else if (maxProb >= 0.02) score = 4;
+        else if (maxProb >= 0.01) score = 3;
+        else if (maxProb > 0) score = 2;
+        else score = 1;
+
+        let luckHtml = "";
+        if (simulationCount === 1) {
+            luckHtml = `<div class="status-badge status-neutral">📌 初始盘面已确认。按下方策略执行你的第一手训练。</div>`;
         } else {
-            heroText = `这是一个极其微妙的战术过渡期。你的潜能池已经不敢随意砸金教练了，但单吊白教练又过于拖沓。此时**蓝教练**是完美平衡“消耗速度”与“命中概率”的黄金解法。点蓝教练，能让抢断的数学期望最大化！`;
+            let scoreStr = `<span class="score-highlight">[运气评分: ${score}/10]</span>`;
+            if (maxProb >= 0.4) {
+                luckHtml = `<div class="status-badge status-good">🟢 ${scoreStr} ${p.luck99}</div>`;
+            } else if (maxProb >= 0.15) {
+                luckHtml = `<div class="status-badge status-mid">🔵 ${scoreStr} ${p.luck97}</div>`;
+            } else if (maxProb >= 0.03) {
+                luckHtml = `<div class="status-badge status-warn">🟠 ${scoreStr} ${p.luck95}</div>`;
+            } else {
+                luckHtml = `<div class="status-badge status-bad">🔴 ${scoreStr} ${p.luck0}</div>`;
+            }
         }
+
+        let stepCap = Math.max(1, Math.floor(cap / 4));
+        let capStages = [cap, Math.max(0, cap - stepCap), Math.max(0, cap - 2*stepCap), Math.max(0, cap - 3*stepCap), 0];
+        capStages = [...new Set(capStages)].sort((a,b) => b-a);
+        
+        let tableHeaders = "";
+        let tableData = "";
+        
+        capStages.forEach((c, index) => {
+            let label = index === 0 ? "当前" : (c === 0 ? "满级极限" : `剩 ${c} 点`);
+            tableHeaders += `<th>${label}</th>`;
+            
+            // 使用期望值绘制表格，避免胜率表格全掉向 0% 引发恐慌
+            let progressRatio = (cap - c) / cap;
+            let projectedTkl = tkl + (bestExp - tkl) * progressRatio;
+            tableData += `<td>${projectedTkl.toFixed(1)}</td>`;
+        });
 
         let html = `
             <div class="hero-rec">
-                <div class="hero-title">🎙️ 建议：本回合点选【${best.name}】</div>
-                <div class="hero-content">${heroText}</div>
-                <div style="margin-top: 15px; border-top: 1px dashed rgba(63, 185, 80, 0.4); padding-top: 12px; font-size: 14px; color: var(--green-light);">
-                    🎯 严格遵循，练到满级后抢断的数学期望将定格在：<span class="hero-highlight">${best.val.toFixed(3)}</span>
+                ${luckHtml}
+                <div class="hero-title">📌 最终决策：这把死磕【${best.name}】</div>
+                <div class="hero-desc">${heroText}</div>
+                
+                <div style="font-size:14px; margin: 15px 0; font-family:var(--font-mono); font-weight:bold; color:var(--accent-target);">
+                    🎯 满分(100)极限胜率：${(maxProb * 100).toFixed(2)}%
+                </div>
+
+                <div class="trend-table-wrapper">
+                    <div class="trend-table-title">如果不爆冷，抢断数值的预期走势：</div>
+                    <table class="trend-table">
+                        <tr>${tableHeaders}</tr>
+                        <tr>${tableData}</tr>
+                    </table>
                 </div>
             </div>
-            <div class="other-options-title">其他非最优选项的最终预期对比：</div>
         `;
-        
-        // 渲染除了 best 之外的其他选项
-        results.forEach((res, index) => {
-            if (index === 0) return; // 跳过第一个（最佳）
-            html += `
-                <div class="prob-row">
-                    <div class="coach-info">
-                        <span class="color-tag ${res.tagClass}"></span>
-                        <div class="coach-name">${res.name}</div>
-                    </div>
-                    <div class="expect-info">
-                        <div class="expect-val" style="color: var(--secondary-text);">${res.val.toFixed(3)}</div>
-                    </div>
-                </div>
-            `;
-        });
 
         resultDiv.style.display = 'flex';
         resultDiv.innerHTML = html;
     }
+
+    updateDashboard();
 </script>
 
 </body>
